@@ -8,7 +8,17 @@ import com.uade.huellitas.domain.model.AlertType
 import com.uade.huellitas.domain.model.Location
 import com.uade.huellitas.domain.model.Pet
 import com.uade.huellitas.domain.model.PetType
+import com.uade.huellitas.data.local.entity.UserEntity
 import com.uade.huellitas.domain.model.User
+
+fun makeUserEntity(
+    uid: String = "user-1",
+    name: String = "Ana García",
+    email: String = "ana@example.com"
+) = UserEntity(
+    uid = uid, name = name, email = email,
+    phone = null, avatarUrl = null, location = null, createdAt = 1_000L
+)
 
 fun makeAlert(
     id: String = "alert-1",
@@ -41,7 +51,8 @@ fun makeAlertEntity(
     status: String = "ACTIVE",
     petType: String = "DOG",
     petName: String = "Luna",
-    photoUrlsJson: String = "url1|url2"
+    photoUrlsJson: String = "url1|url2",
+    pendingSync: Boolean = false
 ) = AlertEntity(
     id = id,
     ownerId = ownerId,
@@ -63,7 +74,7 @@ fun makeAlertEntity(
     contactPhone = "1122334455",
     createdAt = 1_000L,
     updatedAt = 2_000L,
-    pendingSync = false
+    pendingSync = pendingSync
 )
 
 fun makePet(
