@@ -109,3 +109,17 @@ fun makeUser(
     name: String = "Ana García",
     email: String = "ana@example.com"
 ) = User(uid = uid, name = name, email = email)
+
+fun makeUserEntity(
+    uid: String = "user-1",
+    name: String = "Ana García",
+    email: String = "ana@example.com"
+) = com.uade.huellitas.data.local.entity.UserEntity(
+    uid = uid,
+    name = name,
+    email = email,
+    phone = null,
+    avatarUrl = null,
+    location = null,
+    createdAt = 1_000L
+)
