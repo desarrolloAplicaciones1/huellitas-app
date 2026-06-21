@@ -28,6 +28,7 @@ import com.uade.huellitas.domain.usecase.alert.GetActiveAlertsUseCase
 import com.uade.huellitas.domain.usecase.alert.GetAlertByIdUseCase
 import com.uade.huellitas.domain.usecase.alert.GetMyAlertsUseCase
 import com.uade.huellitas.domain.usecase.alert.ResolveAlertUseCase
+import com.uade.huellitas.domain.usecase.alert.PushPendingAlertsUseCase
 import com.uade.huellitas.domain.usecase.alert.SyncAlertsUseCase
 import com.uade.huellitas.domain.usecase.alert.UpdateAlertUseCase
 import com.uade.huellitas.domain.usecase.auth.GetCurrentUserIdUseCase
@@ -113,6 +114,7 @@ class AppContainer(context: Context) {
     val resolveAlertUseCase = ResolveAlertUseCase(alertRepository)
     val deleteAlertUseCase = DeleteAlertUseCase(alertRepository)
     val syncAlertsUseCase = SyncAlertsUseCase(alertRepository)
+    val pushPendingAlertsUseCase = PushPendingAlertsUseCase(alertRepository)
 
     val getMyPetsUseCase = GetMyPetsUseCase(petRepository, userRepository)
     val getPetByIdUseCase = GetPetByIdUseCase(petRepository)

@@ -40,6 +40,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -92,6 +93,7 @@ fun MapScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val userLocation by viewModel.userLocation.collectAsStateWithLifecycle()
+    val isResolvingLocation by viewModel.isResolvingLocation.collectAsStateWithLifecycle()
     var showRadiusSheet by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(true) }
     var selectedAlert by remember { mutableStateOf<MapAlert?>(null) }
@@ -154,7 +156,15 @@ fun MapScreen(
                     }
                 )
 
-                if (userLocation == null) {
+                if (isResolvingLocation) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter),
+                        color = HuellitasTeal,
+                        trackColor = HuellitasTeal.copy(alpha = 0.2f)
+                    )
+                } else if (userLocation == null) {
                     Text(
                         "Activá la ubicación para ver alertas de tu zona",
                         modifier = Modifier

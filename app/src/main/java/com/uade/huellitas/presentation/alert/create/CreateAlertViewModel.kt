@@ -87,10 +87,12 @@ class CreateAlertViewModel(application: Application) : AndroidViewModel(applicat
                 val resolvedLocation = resolveLocation(form, userLocationHint)
 
                 val uploadedPhotoUrl = form.selectedPhotoUri?.let { uri ->
+                    _uiState.value = CreateAlertUiState.UploadingPhoto
                     runCatching { uploadAlertPhotoUseCase(ownerId, uri.toString()) }
+                        .onSuccess { _uiState.value = CreateAlertUiState.Loading }
                         .getOrElse { error ->
                             throw IllegalStateException(
-                                "No se pudo subir la foto del aviso. Verificá Firebase Storage e intentá de nuevo.",
+                                "No se pudo subir la foto. El aviso puede publicarse sin foto: eliminá la imagen y volvé a intentarlo.",
                                 error
                             )
                         }
