@@ -12,4 +12,5 @@ interface AlertRepository {
     suspend fun resolveAlert(alert: Alert)
     suspend fun deleteAlert(alert: Alert)
     suspend fun syncFromFirestore()
+    suspend fun syncPendingToFirestore()
 }

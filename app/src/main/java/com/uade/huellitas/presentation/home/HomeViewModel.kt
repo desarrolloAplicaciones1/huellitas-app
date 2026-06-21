@@ -10,6 +10,8 @@ import com.uade.huellitas.domain.model.PetType
 import java.text.Normalizer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -29,10 +32,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val filterAlertsByRadiusUseCase = appContainer.filterAlertsByRadiusUseCase
 
     private val networkMonitor = appContainer.networkMonitor
+    private val pushPendingAlertsUseCase = appContainer.pushPendingAlertsUseCase
 
     private val _filterState = MutableStateFlow(HomeFilterState())
     private val _locationRefreshTrigger = MutableStateFlow(0)
     val filterState: StateFlow<HomeFilterState> = _filterState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            networkMonitor.isOnline
+                .distinctUntilChanged()
+                .filter { it }
+                .collect { runCatching { pushPendingAlertsUseCase() } }
+        }
+    }
 
     val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
         .stateIn(
