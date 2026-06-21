@@ -7,8 +7,10 @@ import com.uade.huellitas.HuellitasApplication
 import com.uade.huellitas.domain.model.AlertStatus
 import com.uade.huellitas.domain.model.Location
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class AlertDetailViewModel(application: Application) : AndroidViewModel(application) {
@@ -20,6 +22,13 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
     private val resolveAlertUseCase = appContainer.resolveAlertUseCase
     private val deleteAlertUseCase = appContainer.deleteAlertUseCase
     private val geocodeAddressUseCase = appContainer.geocodeAddressUseCase
+
+    val isOnline: StateFlow<Boolean> = appContainer.networkMonitor.isOnline
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = true
+        )
 
     private val _uiState = MutableStateFlow<AlertDetailUiState>(AlertDetailUiState.Loading)
     val uiState: StateFlow<AlertDetailUiState> = _uiState.asStateFlow()
@@ -51,6 +60,10 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
     fun resolveAlert() {
         val currentState = (_uiState.value as? AlertDetailUiState.Success) ?: return
         if (!ensureOwner(currentState)) return
+        if (!isOnline.value) {
+            _snackbarMessage.value = "Sin conexión. Esta acción requiere internet."
+            return
+        }
 
         viewModelScope.launch {
             try {
@@ -79,6 +92,10 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
     ) {
         val currentState = (_uiState.value as? AlertDetailUiState.Success) ?: return
         if (!ensureOwner(currentState)) return
+        if (!isOnline.value) {
+            _snackbarMessage.value = "Sin conexión. Los cambios no se pueden guardar sin internet."
+            return
+        }
 
         viewModelScope.launch {
             try {
@@ -108,6 +125,10 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
     fun saveNameEdit(newName: String) {
         val currentState = (_uiState.value as? AlertDetailUiState.Success) ?: return
         if (!ensureOwner(currentState)) return
+        if (!isOnline.value) {
+            _snackbarMessage.value = "Sin conexión. Los cambios no se pueden guardar sin internet."
+            return
+        }
 
         viewModelScope.launch {
             try {
@@ -126,6 +147,10 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
     fun saveDescriptionEdit(description: String) {
         val currentState = (_uiState.value as? AlertDetailUiState.Success) ?: return
         if (!ensureOwner(currentState)) return
+        if (!isOnline.value) {
+            _snackbarMessage.value = "Sin conexión. Los cambios no se pueden guardar sin internet."
+            return
+        }
 
         viewModelScope.launch {
             try {
@@ -144,6 +169,10 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
     fun saveColorEdit(color: String) {
         val currentState = (_uiState.value as? AlertDetailUiState.Success) ?: return
         if (!ensureOwner(currentState)) return
+        if (!isOnline.value) {
+            _snackbarMessage.value = "Sin conexión. Los cambios no se pueden guardar sin internet."
+            return
+        }
 
         viewModelScope.launch {
             try {
@@ -162,6 +191,10 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
     fun deleteAlert() {
         val currentState = (_uiState.value as? AlertDetailUiState.Success) ?: return
         if (!ensureOwner(currentState)) return
+        if (!isOnline.value) {
+            _snackbarMessage.value = "Sin conexión. No es posible eliminar sin internet."
+            return
+        }
 
         viewModelScope.launch {
             try {
