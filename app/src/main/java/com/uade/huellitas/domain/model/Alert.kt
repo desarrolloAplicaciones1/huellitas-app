@@ -1,5 +1,8 @@
 ﻿package com.uade.huellitas.domain.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class Alert(
     val id: String,
     val ownerId: String,
@@ -21,6 +24,7 @@ data class Alert(
     val updatedAt: Long
 )
 
+@Immutable
 data class Location(
     val latitude: Double,
     val longitude: Double,
