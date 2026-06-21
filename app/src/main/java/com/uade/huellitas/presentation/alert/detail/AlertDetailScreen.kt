@@ -252,6 +252,36 @@ private fun AlertDetailContent(
             }
         }
 
+        // Modo edición — banner visible cuando el usuario está editando
+        if (isEditing) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = HuellitasTeal.copy(alpha = 0.12f)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = null,
+                        tint = HuellitasTeal,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        "Modo edición activo · Modificá los campos y guardá los cambios",
+                        fontFamily = Urbanist,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 13.sp,
+                        color = HuellitasTeal
+                    )
+                }
+            }
+        }
+
         // Contenido scrolleable
         Column(
             modifier = Modifier

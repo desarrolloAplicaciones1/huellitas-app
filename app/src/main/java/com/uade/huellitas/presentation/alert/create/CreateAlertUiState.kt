@@ -7,6 +7,7 @@ import com.uade.huellitas.domain.model.PetType
 sealed class CreateAlertUiState {
     object Idle                           : CreateAlertUiState()
     object Loading                        : CreateAlertUiState()
+    object UploadingPhoto                 : CreateAlertUiState()
     object Success                        : CreateAlertUiState()
     data class Error(val message: String) : CreateAlertUiState()
 }

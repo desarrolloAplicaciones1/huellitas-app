@@ -85,6 +85,12 @@ fun CreateAlertScreen(
     var descriptionError by remember { mutableStateOf<String?>(null) }
     var barrioError by remember { mutableStateOf<String?>(null) }
     var phoneError by remember { mutableStateOf<String?>(null) }
+    var showAbandonDialog by remember { mutableStateOf(false) }
+
+    val isFormDirty = formState.petName.isNotBlank()
+        || formState.description.isNotBlank()
+        || formState.address.isNotBlank()
+        || formState.selectedPhotoUri != null
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -113,6 +119,32 @@ fun CreateAlertScreen(
         } else {
             permissionLauncher.launch(permission)
         }
+    }
+
+    if (showAbandonDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showAbandonDialog = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Text("¿Salir sin publicar?", fontFamily = Urbanist,
+                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            },
+            text = {
+                Text("Perderás los datos ingresados. Esta acción no se puede deshacer.",
+                    fontFamily = Urbanist, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { showAbandonDialog = false; onBack() }) {
+                    Text("Salir", color = Color.Red, fontFamily = Urbanist)
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showAbandonDialog = false }) {
+                    Text("Continuar editando", fontFamily = Urbanist,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        )
     }
 
     LaunchedEffect(uiState) {
@@ -161,7 +193,7 @@ fun CreateAlertScreen(
                         .size(32.dp)
                         .clip(RoundedCornerShape(50))
                         .background(Color(0xFFE8F7F6))
-                        .clickable(onClick = onBack),
+                        .clickable(onClick = { if (isFormDirty) showAbandonDialog = true else onBack() }),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -368,24 +400,42 @@ fun CreateAlertScreen(
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                         .navigationBarsPadding()
                         .height(52.dp),
-                    enabled = uiState !is CreateAlertUiState.Loading,
+                    enabled = uiState !is CreateAlertUiState.Loading && uiState !is CreateAlertUiState.UploadingPhoto,
                     shape = RoundedCornerShape(3.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = HuellitasTeal)
                 ) {
-                    if (uiState is CreateAlertUiState.Loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text(
-                            "Publicar",
-                            fontFamily = Urbanist,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp,
-                            color = Color.White
-                        )
+                    when (uiState) {
+                        is CreateAlertUiState.UploadingPhoto -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text(
+                                "Subiendo foto...",
+                                fontFamily = Urbanist,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
+                        }
+                        is CreateAlertUiState.Loading -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        }
+                        else -> {
+                            Text(
+                                "Publicar",
+                                fontFamily = Urbanist,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }
