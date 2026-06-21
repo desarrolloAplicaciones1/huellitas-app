@@ -19,6 +19,10 @@ class FirebasePhotoStorageRepository(
         return uploadPhoto(userId, localUri, "avatars")
     }
 
+    override suspend fun uploadPetPhoto(ownerId: String, localUri: String): String {
+        return uploadPhoto(ownerId, localUri, "pets")
+    }
+
     override suspend fun deletePhoto(remoteUrl: String) {
         require(remoteUrl.isNotBlank()) { "La URL remota de la imagen no es valida" }
 
