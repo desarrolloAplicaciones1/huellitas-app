@@ -1,12 +1,15 @@
-﻿package com.uade.huellitas.presentation.home
+package com.uade.huellitas.presentation.home
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.uade.huellitas.HuellitasApplication
+import com.uade.huellitas.data.local.NetworkMonitor
 import com.uade.huellitas.domain.model.ReferenceLocationSource
 import com.uade.huellitas.domain.model.AlertType
 import com.uade.huellitas.domain.model.PetType
+import com.uade.huellitas.domain.usecase.alert.FilterAlertsByRadiusUseCase
+import com.uade.huellitas.domain.usecase.alert.GetActiveAlertsUseCase
+import com.uade.huellitas.domain.usecase.location.ResolveReferenceLocationUseCase
+import com.uade.huellitas.domain.usecase.user.GetCurrentUserUseCase
 import java.text.Normalizer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,15 +23,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class HomeViewModel(application: Application) : AndroidViewModel(application) {
-    private val appContainer = (application as HuellitasApplication).appContainer
-
-    private val getActiveAlertsUseCase = appContainer.getActiveAlertsUseCase
-    private val getCurrentUserUseCase = appContainer.getCurrentUserUseCase
-    private val resolveReferenceLocationUseCase = appContainer.resolveReferenceLocationUseCase
-    private val filterAlertsByRadiusUseCase = appContainer.filterAlertsByRadiusUseCase
-
-    private val networkMonitor = appContainer.networkMonitor
+class HomeViewModel(
+    private val getActiveAlertsUseCase: GetActiveAlertsUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val resolveReferenceLocationUseCase: ResolveReferenceLocationUseCase,
+    private val filterAlertsByRadiusUseCase: FilterAlertsByRadiusUseCase,
+    private val networkMonitor: NetworkMonitor
+) : ViewModel() {
 
     private val _filterState = MutableStateFlow(HomeFilterState())
     private val _locationRefreshTrigger = MutableStateFlow(0)
@@ -71,10 +72,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
 
-            HomeUiState.Success(
-                alerts = filteredAlerts,
-                currentUserName = user?.name
-            ) as HomeUiState
+            if (filteredAlerts.isEmpty()) HomeUiState.Empty
+            else HomeUiState.Success(alerts = filteredAlerts, currentUserName = user?.name) as HomeUiState
         }
         .catch { e -> emit(HomeUiState.Error(e.message ?: "Error al cargar avisos")) }
         .stateIn(

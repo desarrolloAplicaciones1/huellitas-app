@@ -56,7 +56,7 @@ fun HomeScreen(
     onNavigateToExpressAlert: () -> Unit = {},
     onNavigateToMap: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel
 ) {
     val uiState     by viewModel.uiState.collectAsStateWithLifecycle()
     val filterState by viewModel.filterState.collectAsStateWithLifecycle()
@@ -190,23 +190,22 @@ fun HomeScreen(
                         Text(state.message, color = MaterialTheme.colorScheme.error)
                     }
                 }
+                is HomeUiState.Empty -> {
+                    EmptyAlertsState(
+                        query = filterState.query,
+                        hasActiveFilters = hasActiveAdvancedFilters,
+                        modifier = Modifier.fillMaxSize(),
+                        onClearFilters = viewModel::clearAllFilters
+                    )
+                }
                 is HomeUiState.Success -> {
-                    if (state.alerts.isEmpty()) {
-                        EmptyAlertsState(
-                            query = filterState.query,
-                            hasActiveFilters = hasActiveAdvancedFilters,
-                            modifier = Modifier.fillMaxSize(),
-                            onClearFilters = viewModel::clearAllFilters
-                        )
-                    } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(state.alerts, key = { it.id }) { alert ->
-                                SharedAlertCard(alert = alert, onClick = { onNavigateToDetail(alert.id) })
-                            }
+                    LazyColumn(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(state.alerts, key = { it.id }) { alert ->
+                            SharedAlertCard(alert = alert, onClick = { onNavigateToDetail(alert.id) })
                         }
                     }
                 }

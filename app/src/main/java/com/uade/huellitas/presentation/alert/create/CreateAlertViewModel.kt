@@ -1,15 +1,18 @@
 package com.uade.huellitas.presentation.alert.create
 
-import android.app.Application
 import android.net.Uri
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.uade.huellitas.HuellitasApplication
 import com.uade.huellitas.domain.model.Alert
 import com.uade.huellitas.domain.model.AlertStatus
 import com.uade.huellitas.domain.model.AlertType
 import com.uade.huellitas.domain.model.Location
 import com.uade.huellitas.domain.model.PetType
+import com.uade.huellitas.domain.usecase.alert.CreateAlertUseCase
+import com.uade.huellitas.domain.usecase.auth.GetCurrentUserIdUseCase
+import com.uade.huellitas.domain.usecase.location.GeocodeAddressUseCase
+import com.uade.huellitas.domain.usecase.media.UploadAlertPhotoUseCase
+import com.uade.huellitas.domain.usecase.user.GetCurrentUserUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,14 +21,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-class CreateAlertViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val appContainer = (application as HuellitasApplication).appContainer
-    private val createAlertUseCase = appContainer.createAlertUseCase
-    private val getCurrentUserIdUseCase = appContainer.getCurrentUserIdUseCase
-    private val getCurrentUserUseCase = appContainer.getCurrentUserUseCase
-    private val geocodeAddressUseCase = appContainer.geocodeAddressUseCase
-    private val uploadAlertPhotoUseCase = appContainer.uploadAlertPhotoUseCase
+class CreateAlertViewModel(
+    private val createAlertUseCase: CreateAlertUseCase,
+    private val getCurrentUserIdUseCase: GetCurrentUserIdUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val geocodeAddressUseCase: GeocodeAddressUseCase,
+    private val uploadAlertPhotoUseCase: UploadAlertPhotoUseCase
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CreateAlertUiState>(CreateAlertUiState.Idle)
     val uiState: StateFlow<CreateAlertUiState> = _uiState.asStateFlow()
@@ -63,13 +65,18 @@ class CreateAlertViewModel(application: Application) : AndroidViewModel(applicat
     fun onLocationChange(lat: Double, lng: Double, address: String) {
         _formState.value = _formState.value.copy(latitude = lat, longitude = lng, address = address)
     }
-
     fun onPhotoSelected(uri: Uri) {
         _formState.value = _formState.value.copy(selectedPhotoUri = uri)
     }
 
     fun submitAlert() {
         val form = _formState.value
+
+        if (form.petName.isBlank()) {
+            _uiState.value = CreateAlertUiState.Error("El nombre de la mascota es obligatorio.")
+            return
+        }
+
         val ownerId = getCurrentUserIdUseCase() ?: run {
             _uiState.value = CreateAlertUiState.Error("No hay sesion activa. Iniciá sesión e intentá de nuevo.")
             return

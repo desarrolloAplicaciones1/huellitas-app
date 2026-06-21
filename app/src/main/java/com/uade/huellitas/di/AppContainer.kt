@@ -1,4 +1,4 @@
-﻿package com.uade.huellitas.di
+package com.uade.huellitas.di
 
 import android.content.Context
 import com.uade.huellitas.data.local.AppDatabase
@@ -6,6 +6,7 @@ import com.uade.huellitas.data.local.NetworkMonitor
 import com.uade.huellitas.data.local.OnboardingPreferences
 import com.uade.huellitas.data.remote.FirebaseAuthDataSource
 import com.uade.huellitas.data.remote.FirestoreAlertDataSource
+import com.uade.huellitas.data.remote.FirestorePetDataSource
 import com.uade.huellitas.data.remote.FirestoreUserDataSource
 import com.uade.huellitas.data.repository.AndroidDeviceLocationRepository
 import com.uade.huellitas.data.repository.AndroidGeocodingRepository
@@ -42,6 +43,7 @@ import com.uade.huellitas.domain.usecase.location.GetCurrentDeviceLocationUseCas
 import com.uade.huellitas.domain.usecase.location.ResolveReferenceLocationUseCase
 import com.uade.huellitas.domain.usecase.media.DeletePhotoUseCase
 import com.uade.huellitas.domain.usecase.media.UploadAlertPhotoUseCase
+import com.uade.huellitas.domain.usecase.media.UploadPetPhotoUseCase
 import com.uade.huellitas.domain.usecase.media.UploadProfilePhotoUseCase
 import com.uade.huellitas.domain.usecase.pet.DeletePetUseCase
 import com.uade.huellitas.domain.usecase.pet.GetMyPetsUseCase
@@ -58,6 +60,9 @@ import com.uade.huellitas.domain.usecase.user.ChangePasswordUseCase
 import com.uade.huellitas.domain.usecase.user.GetCurrentUserUseCase
 import com.uade.huellitas.domain.usecase.user.SyncCurrentUserProfileUseCase
 import com.uade.huellitas.domain.usecase.user.UpdateUserProfileUseCase
+import com.uade.huellitas.presentation.alert.create.CreateAlertViewModel
+import com.uade.huellitas.presentation.auth.LoginViewModel
+import com.uade.huellitas.presentation.home.HomeViewModel
 import com.uade.huellitas.presentation.onboarding.OnboardingViewModel
 import com.uade.huellitas.presentation.profile.alerts.MyAlertsViewModel
 import com.uade.huellitas.presentation.profile.pets.MyPetsViewModel
@@ -71,12 +76,13 @@ class AppContainer(context: Context) {
     private val authDataSource = FirebaseAuthDataSource()
     private val firestoreAlertDataSource = FirestoreAlertDataSource()
     private val firestoreUserDataSource = FirestoreUserDataSource()
+    private val firestorePetDataSource = FirestorePetDataSource()
 
     private val userRepository: UserRepositoryContract =
         UserRepositoryImpl(database.userDao(), authDataSource, firestoreUserDataSource)
 
     private val petRepository: PetRepositoryContract =
-        PetRepositoryImpl(database.petDao())
+        PetRepositoryImpl(database.petDao(), firestorePetDataSource)
 
     private val photoStorageRepository: PhotoStorageRepositoryContract =
         FirebasePhotoStorageRepository()
@@ -137,10 +143,26 @@ class AppContainer(context: Context) {
     val deletePhotoUseCase = DeletePhotoUseCase(photoStorageRepository)
     val uploadAlertPhotoUseCase = UploadAlertPhotoUseCase(photoStorageRepository)
     val uploadProfilePhotoUseCase = UploadProfilePhotoUseCase(photoStorageRepository)
+    val uploadPetPhotoUseCase = UploadPetPhotoUseCase(photoStorageRepository)
 
     val completeOnboardingUseCase = CompleteOnboardingUseCase(onboardingPreferences)
     val onboardingViewModel = OnboardingViewModel(completeOnboardingUseCase)
 
+    val loginViewModel = LoginViewModel(loginUseCase, sendPasswordResetEmailUseCase)
+    val homeViewModel = HomeViewModel(
+        getActiveAlertsUseCase,
+        getCurrentUserUseCase,
+        resolveReferenceLocationUseCase,
+        filterAlertsByRadiusUseCase,
+        networkMonitor
+    )
+    val createAlertViewModel = CreateAlertViewModel(
+        createAlertUseCase,
+        getCurrentUserIdUseCase,
+        getCurrentUserUseCase,
+        geocodeAddressUseCase,
+        uploadAlertPhotoUseCase
+    )
     val myAlertsViewModel = MyAlertsViewModel(getMyAlertsUseCase)
-    val myPetsViewModel = MyPetsViewModel(getMyPetsUseCase)
+    val myPetsViewModel = MyPetsViewModel(getMyPetsUseCase, deletePetUseCase)
 }

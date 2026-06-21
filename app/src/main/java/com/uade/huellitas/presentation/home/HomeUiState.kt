@@ -1,4 +1,4 @@
-﻿package com.uade.huellitas.presentation.home
+package com.uade.huellitas.presentation.home
 
 import com.uade.huellitas.domain.model.Alert
 import com.uade.huellitas.domain.model.AlertType
@@ -6,6 +6,7 @@ import com.uade.huellitas.domain.model.PetType
 
 sealed class HomeUiState {
     object Loading : HomeUiState()
+    object Empty   : HomeUiState()
     data class Success(
         val alerts: List<Alert>,
         val currentUserName: String? = null

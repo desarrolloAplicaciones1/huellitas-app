@@ -4,6 +4,7 @@ kotlin = "2.0.21"
 coreKtx = "1.13.1"
 junit = "4.13.2"
 mockk = "1.13.10"
+turbine = "1.1.0"
 datastore = "1.1.1"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
@@ -56,6 +57,7 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth-ktx" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore-ktx" }
 firebase-storage = { group = "com.google.firebase", name = "firebase-storage-ktx" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -73,7 +73,7 @@ import kotlinx.coroutines.launch
 fun CreateAlertScreen(
     onBack: () -> Unit,
     onAlertCreated: () -> Unit,
-    viewModel: CreateAlertViewModel = viewModel()
+    viewModel: CreateAlertViewModel
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val formState by viewModel.formState.collectAsStateWithLifecycle()
