@@ -98,6 +98,13 @@ class AlertRepository(
         }
     }
 
+    override suspend fun syncPendingToFirestore() {
+        alertDao.getPendingAlerts().forEach { entity ->
+            runCatching { remoteDataSource.saveAlert(entity.toDomain()) }
+                .onSuccess { alertDao.insert(entity.copy(pendingSync = false)) }
+        }
+    }
+
     companion object {
         private const val TAG = "AlertRepository"
         @Volatile private var INSTANCE: AlertRepository? = null
