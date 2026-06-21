@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.Pets
+import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,6 +45,7 @@ fun AlertDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarMessage by viewModel.snackbarMessage.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(alertId) { viewModel.loadAlert(alertId) }
@@ -79,6 +81,7 @@ fun AlertDetailScreen(
                 AlertDetailContent(
                     alert = state.alert,
                     isOwner = state.isOwner,
+                    isOnline = isOnline,
                     onBack = onBack,
                     onUpdate = viewModel::updateAlert,
                     onSaveNameEdit = viewModel::saveNameEdit,
@@ -104,6 +107,7 @@ fun AlertDetailScreen(
 private fun AlertDetailContent(
     alert: Alert,
     isOwner: Boolean,
+    isOnline: Boolean,
     onBack: () -> Unit,
     onUpdate: (String, String, String, String, String, String, String, Boolean?) -> Unit,
     onSaveNameEdit: (String) -> Unit,
@@ -249,6 +253,35 @@ private fun AlertDetailContent(
                 Text("300M", fontFamily = Urbanist,
                     fontWeight = FontWeight.SemiBold, fontSize = 12.sp,
                     color = Color(0xFF1C1C1C))
+            }
+        }
+
+        if (!isOnline) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.errorContainer
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Rounded.WifiOff,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "Sin conexión · No se pueden guardar cambios",
+                        fontFamily = Urbanist,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
             }
         }
 
