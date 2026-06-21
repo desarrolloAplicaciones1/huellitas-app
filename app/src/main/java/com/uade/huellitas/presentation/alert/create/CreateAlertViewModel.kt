@@ -4,18 +4,21 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FirebaseFirestore
 import com.uade.huellitas.HuellitasApplication
 import com.uade.huellitas.domain.model.Alert
 import com.uade.huellitas.domain.model.AlertStatus
 import com.uade.huellitas.domain.model.AlertType
 import com.uade.huellitas.domain.model.Location
 import com.uade.huellitas.domain.model.PetType
+import com.uade.huellitas.showAlertNotification
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
 class CreateAlertViewModel(application: Application) : AndroidViewModel(application) {
@@ -117,6 +120,26 @@ class CreateAlertViewModel(application: Application) : AndroidViewModel(applicat
                 )
 
                 createAlertUseCase(alert)
+
+                val typeLabel = if (form.alertType == AlertType.LOST) "perdida" else "encontrada"
+                val notifTitle = "Nueva mascota $typeLabel cerca tuyo"
+                val notifBody = "${form.petName.trim()} — ${form.address.ifBlank { "sin dirección" }}"
+
+                runCatching {
+                    FirebaseFirestore.getInstance()
+                        .collection("notifications")
+                        .add(
+                            mapOf(
+                                "title" to notifTitle,
+                                "body" to notifBody,
+                                "alertId" to alert.id,
+                                "createdAt" to alert.createdAt
+                            )
+                        ).await()
+                }
+
+                showAlertNotification(getApplication(), notifTitle, notifBody)
+
                 _uiState.value = CreateAlertUiState.Success
             } catch (e: Exception) {
                 _uiState.value = CreateAlertUiState.Error(
