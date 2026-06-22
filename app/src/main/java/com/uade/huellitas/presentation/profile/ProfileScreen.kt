@@ -21,7 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
@@ -83,6 +83,8 @@ fun ProfileScreen(
     onBack: () -> Unit = {},
     onLogout: () -> Unit,
     onNavigateToAlertDetail: (alertId: String) -> Unit = {},
+    onNavigateToMyAlerts: () -> Unit = {},
+    onNavigateToMyPets: () -> Unit = {},
     onNavigateToEditProfile: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel()
 ) {
@@ -207,7 +209,7 @@ fun ProfileScreen(
                 contentAlignment = Alignment.Center
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = HuellitasTeal, modifier = Modifier.size(20.dp))
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = HuellitasTeal, modifier = Modifier.size(20.dp))
                 }
             }
             Spacer(modifier = Modifier.width(12.dp))
@@ -287,6 +289,21 @@ fun ProfileScreen(
                     darkMode = isDark,
                     backgroundColor = cardBgDynamic
                 )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = if (isDark) Color(0xFF333333) else Color(0xFFEEEEEE))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        SectionTitle("GESTION", darkMode = isDark)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Surface(shape = RoundedCornerShape(12.dp), color = cardBgDynamic, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            Column {
+                CuentaItem("Mis avisos", darkMode = isDark, onClick = onNavigateToMyAlerts)
+                HorizontalDivider(color = if (isDark) Color(0xFF333333) else Color(0xFFEEEEEE), modifier = Modifier.padding(horizontal = 12.dp))
+                CuentaItem("Mis mascotas", darkMode = isDark, onClick = onNavigateToMyPets)
             }
         }
 
