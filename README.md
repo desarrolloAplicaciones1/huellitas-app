@@ -7,6 +7,25 @@ Prof. Narducci Adrian Alberto
 
 ---
 
+## Estado de cierre
+
+### Cerrado en codigo
+
+- `assembleDebug` y `testDebugUnitTest` pasan.
+- Se completo el flujo de perfil con acceso a `Mis avisos`, `Mis mascotas` y alta de mascota.
+- Se implemento `CreatePetScreen` y quedo conectada la ruta `CreatePet`.
+- Se unifico la ubicacion de referencia del mapa para filtrar, centrar camara y calcular distancia.
+- El detalle del aviso ya no usa una distancia hardcodeada: muestra distancia real o fallback por direccion.
+- Se removieron elementos de UI y rutas que prometian comportamiento no implementado (`Modo offline` manual y `EditAlert` vacio).
+
+### Lo que resta para dar la app por cerrada
+
+1. Mergear la pila de PRs pendientes sobre `main`.
+2. Hacer QA manual en dispositivo real con Firebase, Maps, permisos de ubicacion y reconexion.
+3. Como mejora de calidad, sumar tests instrumentados/UI; hoy la validacion automatica es unitaria.
+
+---
+
 ## Stack tecnologico
 
 | Capa | Tecnologia |
@@ -258,6 +277,7 @@ ALERT
 | `EditProfileViewModel` | Usa `UpdateUserProfileUseCase`, `UploadProfilePhotoUseCase` y `ChangePasswordUseCase` para persistir nombre, telefono, avatar y credenciales. |
 | `MyAlertsViewModel` | Usa `GetMyAlertsUseCase` filtrado por el usuario autenticado. |
 | `MyPetsViewModel` | Usa `GetMyPetsUseCase` y `DeletePetUseCase`. |
+| `CreatePetViewModel` | Usa `SavePetUseCase`, `GetCurrentUserIdUseCase` y `UploadPetPhotoUseCase` para registrar mascotas del usuario. |
 
 ---
 
@@ -268,6 +288,7 @@ ALERT
 3. Si la sincronizacion remota sale bien, se actualiza Room con `pendingSync = false`.
 4. Si falla, el dato sigue disponible localmente y puede resincronizarse mas tarde.
 5. `SyncAlertsUseCase` delega en `AlertRepository.syncFromFirestore()` para recuperar el estado remoto.
+6. El comportamiento offline es automatico: no depende de un toggle manual en configuracion.
 
 ---
 
@@ -299,10 +320,10 @@ ALERT
 
 | ID | Historia | Estado | Notas |
 |---|---|---|---|
-| HU-16 | Como usuario, quiero ver un listado de los avisos que yo publique para hacer seguimiento de mis reportes activos. | Completa | Perfil y pantalla dedicada con filtros para activos, resueltos y todos. |
+| HU-16 | Como usuario, quiero ver un listado de los avisos que yo publique para hacer seguimiento de mis reportes activos. | Completa | Perfil, acceso dedicado a `Mis avisos` y filtros para activos, resueltos y todos. |
 | HU-17 | Como usuario, quiero editar mi nombre y datos de contacto en mi perfil. | Completa | Permite editar nombre, telefono, ubicacion y contrasena. |
 | HU-19 | Como usuario, quiero recibir un email para restablecer mi contrasena si la olvide. | Completa | Integrado con Firebase Authentication. |
-| HU-21 | Como usuario, quiero ver los avisos filtrados por distancia GPS real desde mi ubicacion actual. | Completa | Requiere permiso de ubicacion; usa GPS real con fallback a ubicacion guardada. |
+| HU-21 | Como usuario, quiero ver los avisos filtrados por distancia GPS real desde mi ubicacion actual. | Completa | Requiere permiso de ubicacion; feed, mapa y detalle usan la misma ubicacion de referencia con fallback a ubicacion guardada. |
 | HU-22 | Como usuario, quiero buscar avisos por nombre de mascota desde el feed. | Completa | Incluye busqueda en tiempo real y convivencia con filtros del feed. |
 | HU-23 | Como usuario, quiero subir una foto de perfil para que otros usuarios puedan identificarme. | Completa | Incluye picker de imagen, upload a Firebase Storage y persistencia del avatar. |
 
