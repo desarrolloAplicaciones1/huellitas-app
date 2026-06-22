@@ -3,6 +3,7 @@
 import com.uade.huellitas.domain.model.Alert
 import com.uade.huellitas.domain.model.Location
 import com.uade.huellitas.domain.model.PetType
+import com.uade.huellitas.domain.model.ReferenceLocationSource
 
 sealed class MapUiState {
     object Loading : MapUiState()
@@ -10,7 +11,8 @@ sealed class MapUiState {
         val alerts: List<MapAlert>,
         val selectedRadiusKm: Int,
         val centerLabel: String,
-        val center: Location
+        val center: Location,
+        val centerSource: ReferenceLocationSource
     ) : MapUiState()
     data class Error(val message: String) : MapUiState()
 }

@@ -1,11 +1,16 @@
-﻿package com.uade.huellitas.presentation.map
+package com.uade.huellitas.presentation.map
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.uade.huellitas.HuellitasApplication
 import com.uade.huellitas.domain.model.Alert
 import com.uade.huellitas.domain.model.Location
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,15 +21,6 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import android.Manifest
-import android.annotation.SuppressLint
-import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
-import com.google.android.gms.location.CurrentLocationRequest
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
-import com.google.android.gms.maps.model.LatLng
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModel(application: Application) : AndroidViewModel(application) {
@@ -38,11 +34,6 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     private val calculateDistanceMetersUseCase = appContainer.calculateDistanceMetersUseCase
     private val filterAlertsByRadiusUseCase = appContainer.filterAlertsByRadiusUseCase
     private val locationRefreshTrigger = MutableStateFlow(0)
-    private val fusedLocationClient =
-        LocationServices.getFusedLocationProviderClient(application)
-
-    private val _userLocation = MutableStateFlow<LatLng?>(null)
-    val userLocation: StateFlow<LatLng?> = _userLocation.asStateFlow()
 
     private val _isResolvingLocation = MutableStateFlow(false)
     val isResolvingLocation: StateFlow<Boolean> = _isResolvingLocation.asStateFlow()
@@ -67,14 +58,19 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                 alert.toMapAlert(referenceLocation.location)
             }
 
+            _isResolvingLocation.value = false
             MapUiState.Success(
                 alerts = mapAlerts,
                 selectedRadiusKm = settings.alertRadiusKm,
                 centerLabel = referenceLocation.label,
-                center = referenceLocation.location
+                center = referenceLocation.location,
+                centerSource = referenceLocation.source
             ) as MapUiState
         }
-        .catch { e -> emit(MapUiState.Error(e.message ?: "Error al cargar el mapa")) }
+        .catch { e ->
+            _isResolvingLocation.value = false
+            emit(MapUiState.Error(e.message ?: "Error al cargar el mapa"))
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -98,33 +94,8 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                 PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_COARSE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED
-        if (!hasPermission) return
-
+        _isResolvingLocation.value = hasPermission
         refreshReferenceLocation()
-        _isResolvingLocation.value = true
-
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location ->
-                location?.let {
-                    _userLocation.value = LatLng(it.latitude, it.longitude)
-                    _isResolvingLocation.value = false
-                } ?: run {
-                    val request = CurrentLocationRequest.Builder()
-                        .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-                        .build()
-                    fusedLocationClient.getCurrentLocation(request, null)
-                        .addOnSuccessListener { loc ->
-                            loc?.let { _userLocation.value = LatLng(loc.latitude, loc.longitude) }
-                            _isResolvingLocation.value = false
-                        }
-                        .addOnFailureListener {
-                            _isResolvingLocation.value = false
-                        }
-                }
-            }
-            .addOnFailureListener {
-                _isResolvingLocation.value = false
-            }
     }
 
     private fun Alert.toMapAlert(center: Location): MapAlert {

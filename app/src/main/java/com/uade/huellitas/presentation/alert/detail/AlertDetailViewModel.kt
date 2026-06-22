@@ -4,12 +4,14 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.uade.huellitas.HuellitasApplication
+import com.uade.huellitas.domain.model.Alert
 import com.uade.huellitas.domain.model.AlertStatus
 import com.uade.huellitas.domain.model.Location
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -18,10 +20,13 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
     private val appContainer = (application as HuellitasApplication).appContainer
     private val getAlertByIdUseCase = appContainer.getAlertByIdUseCase
     private val getCurrentUserIdUseCase = appContainer.getCurrentUserIdUseCase
+    private val getCurrentUserUseCase = appContainer.getCurrentUserUseCase
     private val updateAlertUseCase = appContainer.updateAlertUseCase
     private val resolveAlertUseCase = appContainer.resolveAlertUseCase
     private val deleteAlertUseCase = appContainer.deleteAlertUseCase
     private val geocodeAddressUseCase = appContainer.geocodeAddressUseCase
+    private val resolveReferenceLocationUseCase = appContainer.resolveReferenceLocationUseCase
+    private val calculateDistanceMetersUseCase = appContainer.calculateDistanceMetersUseCase
 
     val isOnline: StateFlow<Boolean> = appContainer.networkMonitor.isOnline
         .stateIn(
@@ -36,6 +41,9 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
     private val _snackbarMessage = MutableStateFlow<String?>(null)
     val snackbarMessage: StateFlow<String?> = _snackbarMessage.asStateFlow()
 
+    private val _distanceLabel = MutableStateFlow<String?>(null)
+    val distanceLabel: StateFlow<String?> = _distanceLabel.asStateFlow()
+
     fun clearSnackbarMessage() {
         _snackbarMessage.value = null
     }
@@ -47,6 +55,7 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
                 val alert = getAlertByIdUseCase(alertId)
                 if (alert != null) {
                     val isOwner = getCurrentUserIdUseCase() == alert.ownerId
+                    _distanceLabel.value = resolveDistanceLabel(alert)
                     _uiState.value = AlertDetailUiState.Success(alert, isOwner)
                 } else {
                     _uiState.value = AlertDetailUiState.Error("Aviso no encontrado")
@@ -61,7 +70,7 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
         val currentState = (_uiState.value as? AlertDetailUiState.Success) ?: return
         if (!ensureOwner(currentState)) return
         if (!isOnline.value) {
-            _snackbarMessage.value = "Sin conexión. Esta acción requiere internet."
+            _snackbarMessage.value = "Sin conexion. Esta accion requiere internet."
             return
         }
 
@@ -72,6 +81,7 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
                     status = AlertStatus.RESOLVED,
                     updatedAt = System.currentTimeMillis()
                 )
+                _distanceLabel.value = resolveDistanceLabel(resolved)
                 _uiState.value = AlertDetailUiState.Success(resolved, currentState.isOwner)
                 _snackbarMessage.value = "Aviso marcado como resuelto"
             } catch (e: Exception) {
@@ -93,7 +103,7 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
         val currentState = (_uiState.value as? AlertDetailUiState.Success) ?: return
         if (!ensureOwner(currentState)) return
         if (!isOnline.value) {
-            _snackbarMessage.value = "Sin conexión. Los cambios no se pueden guardar sin internet."
+            _snackbarMessage.value = "Sin conexion. Los cambios no se pueden guardar sin internet."
             return
         }
 
@@ -115,6 +125,7 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
                     updatedAt = System.currentTimeMillis()
                 )
                 updateAlertUseCase(updated)
+                _distanceLabel.value = resolveDistanceLabel(updated)
                 _uiState.value = AlertDetailUiState.Success(updated, currentState.isOwner)
             } catch (e: Exception) {
                 _snackbarMessage.value = e.message ?: "Error al actualizar aviso"
@@ -126,7 +137,7 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
         val currentState = (_uiState.value as? AlertDetailUiState.Success) ?: return
         if (!ensureOwner(currentState)) return
         if (!isOnline.value) {
-            _snackbarMessage.value = "Sin conexión. Los cambios no se pueden guardar sin internet."
+            _snackbarMessage.value = "Sin conexion. Los cambios no se pueden guardar sin internet."
             return
         }
 
@@ -137,6 +148,7 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
                     updatedAt = System.currentTimeMillis()
                 )
                 updateAlertUseCase(updated)
+                _distanceLabel.value = resolveDistanceLabel(updated)
                 _uiState.value = AlertDetailUiState.Success(updated, currentState.isOwner)
             } catch (e: Exception) {
                 _snackbarMessage.value = e.message ?: "Error al guardar nombre"
@@ -148,7 +160,7 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
         val currentState = (_uiState.value as? AlertDetailUiState.Success) ?: return
         if (!ensureOwner(currentState)) return
         if (!isOnline.value) {
-            _snackbarMessage.value = "Sin conexión. Los cambios no se pueden guardar sin internet."
+            _snackbarMessage.value = "Sin conexion. Los cambios no se pueden guardar sin internet."
             return
         }
 
@@ -159,6 +171,7 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
                     updatedAt = System.currentTimeMillis()
                 )
                 updateAlertUseCase(updated)
+                _distanceLabel.value = resolveDistanceLabel(updated)
                 _uiState.value = AlertDetailUiState.Success(updated, currentState.isOwner)
             } catch (e: Exception) {
                 _snackbarMessage.value = e.message ?: "Error al guardar descripcion"
@@ -170,7 +183,7 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
         val currentState = (_uiState.value as? AlertDetailUiState.Success) ?: return
         if (!ensureOwner(currentState)) return
         if (!isOnline.value) {
-            _snackbarMessage.value = "Sin conexión. Los cambios no se pueden guardar sin internet."
+            _snackbarMessage.value = "Sin conexion. Los cambios no se pueden guardar sin internet."
             return
         }
 
@@ -181,6 +194,7 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
                     updatedAt = System.currentTimeMillis()
                 )
                 updateAlertUseCase(updated)
+                _distanceLabel.value = resolveDistanceLabel(updated)
                 _uiState.value = AlertDetailUiState.Success(updated, currentState.isOwner)
             } catch (e: Exception) {
                 _snackbarMessage.value = e.message ?: "Error al guardar color"
@@ -192,7 +206,7 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
         val currentState = (_uiState.value as? AlertDetailUiState.Success) ?: return
         if (!ensureOwner(currentState)) return
         if (!isOnline.value) {
-            _snackbarMessage.value = "Sin conexión. No es posible eliminar sin internet."
+            _snackbarMessage.value = "Sin conexion. No es posible eliminar sin internet."
             return
         }
 
@@ -224,11 +238,26 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
             ?: currentLocation.copy(address = trimmedAddress)
     }
 
+    private suspend fun resolveDistanceLabel(alert: Alert): String {
+        val userLocation = runCatching { getCurrentUserUseCase().first()?.location }.getOrNull()
+        val referenceLocation = resolveReferenceLocationUseCase(userLocation)
+        val distanceMeters = calculateDistanceMetersUseCase(referenceLocation.location, alert.location)
+        return distanceMeters?.let(::formatDistance) ?: alert.location.address ?: "Ubicacion sin precision"
+    }
+
     private fun buildGeocodingQuery(address: String, currentAddress: String): String {
         if (address.contains(",")) return address
         return listOf(address, currentAddress.ifBlank { DEFAULT_LOCATION_HINT })
             .filter { it.isNotBlank() }
             .joinToString(", ")
+    }
+
+    private fun formatDistance(distanceMeters: Int): String {
+        return if (distanceMeters < 1000) {
+            "${distanceMeters}m"
+        } else {
+            "${"%.1f".format(distanceMeters / 1000.0)}km"
+        }
     }
 
     private companion object {

@@ -46,6 +46,7 @@ fun AlertDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarMessage by viewModel.snackbarMessage.collectAsStateWithLifecycle()
     val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
+    val distanceLabel by viewModel.distanceLabel.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(alertId) { viewModel.loadAlert(alertId) }
@@ -82,6 +83,7 @@ fun AlertDetailScreen(
                     alert = state.alert,
                     isOwner = state.isOwner,
                     isOnline = isOnline,
+                    distanceLabel = distanceLabel,
                     onBack = onBack,
                     onUpdate = viewModel::updateAlert,
                     onSaveNameEdit = viewModel::saveNameEdit,
@@ -108,6 +110,7 @@ private fun AlertDetailContent(
     alert: Alert,
     isOwner: Boolean,
     isOnline: Boolean,
+    distanceLabel: String?,
     onBack: () -> Unit,
     onUpdate: (String, String, String, String, String, String, String, Boolean?) -> Unit,
     onSaveNameEdit: (String) -> Unit,
@@ -250,7 +253,7 @@ private fun AlertDetailContent(
                     .background(Color.White.copy(alpha = 0.85f))
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
-                Text("300M", fontFamily = Urbanist,
+                Text(distanceLabel ?: (alert.location.address ?: "Sin ubicacion"), fontFamily = Urbanist,
                     fontWeight = FontWeight.SemiBold, fontSize = 12.sp,
                     color = Color(0xFF1C1C1C))
             }
