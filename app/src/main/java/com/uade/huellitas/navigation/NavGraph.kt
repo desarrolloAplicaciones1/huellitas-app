@@ -181,9 +181,5 @@ fun NavGraph(
             )
         }
 
-        composable(
-            route = Screen.EditAlert.route,
-            arguments = listOf(navArgument("alertId") { type = NavType.StringType })
-        ) { }
     }
 }

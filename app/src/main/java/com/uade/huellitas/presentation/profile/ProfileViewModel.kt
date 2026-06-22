@@ -21,7 +21,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val setFollowSystemThemeUseCase = appContainer.setFollowSystemThemeUseCase
     private val setDarkModeUseCase = appContainer.setDarkModeUseCase
     private val setAlertRadiusUseCase = appContainer.setAlertRadiusUseCase
-    private val setOfflineModeUseCase = appContainer.setOfflineModeUseCase
     private val logoutUseCase = appContainer.logoutUseCase
 
     val uiState: StateFlow<ProfileUiState> = combine(
@@ -67,12 +66,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     fun setAlertRadius(radiusKm: Int) {
         viewModelScope.launch {
             setAlertRadiusUseCase(radiusKm)
-        }
-    }
-
-    fun setOfflineMode(enabled: Boolean) {
-        viewModelScope.launch {
-            setOfflineModeUseCase(enabled)
         }
     }
 }

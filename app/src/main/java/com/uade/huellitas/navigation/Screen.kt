@@ -17,9 +17,6 @@ sealed class Screen(val route: String) {
     object AlertDetail  : Screen("alert_detail/{alertId}") {
         fun createRoute(alertId: String) = "alert_detail/$alertId"
     }
-    object EditAlert    : Screen("edit_alert/{alertId}") {
-        fun createRoute(alertId: String) = "edit_alert/$alertId"
-    }
     object EditPet      : Screen("edit_pet/{petId}") {
         fun createRoute(petId: String) = "edit_pet/$petId"
     }
