@@ -33,6 +33,7 @@ class CreatePetViewModel(application: Application) : AndroidViewModel(applicatio
     fun onDescriptionChange(value: String) { _formState.value = _formState.value.copy(description = value) }
     fun onMicrochipChange(value: String) { _formState.value = _formState.value.copy(microchipId = value) }
     fun onPhotoSelected(uri: Uri) { _formState.value = _formState.value.copy(selectedPhotoUri = uri) }
+    fun clearSelectedPhoto() { _formState.value = _formState.value.copy(selectedPhotoUri = null) }
 
     fun savePet() {
         val form = _formState.value
