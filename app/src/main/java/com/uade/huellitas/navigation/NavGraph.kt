@@ -1,4 +1,4 @@
-﻿package com.uade.huellitas.navigation
+package com.uade.huellitas.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
@@ -62,6 +62,7 @@ fun NavGraph(
 
         composable(Screen.Login.route) {
             LoginScreen(
+                viewModel = appContainer.loginViewModel,
                 onLoginSuccess = {
                     navController.navigate(Screen.Home.route) { popUpTo(0) }
                 },
@@ -80,6 +81,7 @@ fun NavGraph(
 
         composable(Screen.Home.route) {
             HomeScreen(
+                viewModel = appContainer.homeViewModel,
                 onNavigateToDetail = { alertId ->
                     navController.navigate(Screen.AlertDetail.createRoute(alertId))
                 },
@@ -95,6 +97,7 @@ fun NavGraph(
 
         composable(Screen.CreateAlert.route) {
             CreateAlertScreen(
+                viewModel = appContainer.createAlertViewModel,
                 onBack = { navController.popBackStack() },
                 onAlertCreated = { navController.popBackStack() }
             )
@@ -149,8 +152,13 @@ fun NavGraph(
         composable(Screen.MyPets.route) {
             MyPetsScreen(
                 viewModel = appContainer.myPetsViewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onNavigateToCreatePet = { navController.navigate(Screen.CreatePet.route) }
             )
+        }
+
+        composable(Screen.CreatePet.route) {
+            // TODO: CreatePetScreen
         }
 
         composable(Screen.MyAlerts.route) {

@@ -1,19 +1,18 @@
-﻿package com.uade.huellitas.presentation.auth
+package com.uade.huellitas.presentation.auth
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.uade.huellitas.HuellitasApplication
+import com.uade.huellitas.domain.usecase.auth.LoginUseCase
+import com.uade.huellitas.domain.usecase.auth.SendPasswordResetEmailUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class LoginViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val appContainer = (application as HuellitasApplication).appContainer
-    private val loginUseCase = appContainer.loginUseCase
-    private val sendPasswordResetEmailUseCase = appContainer.sendPasswordResetEmailUseCase
+class LoginViewModel(
+    private val loginUseCase: LoginUseCase,
+    private val sendPasswordResetEmailUseCase: SendPasswordResetEmailUseCase
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()

@@ -18,24 +18,35 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.rounded.Pets
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -53,9 +64,50 @@ import com.uade.huellitas.ui.theme.Urbanist
 @Composable
 fun MyPetsScreen(
     viewModel: MyPetsViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToCreatePet: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var petToDelete by remember { mutableStateOf<Pet?>(null) }
+
+    petToDelete?.let { pet ->
+        AlertDialog(
+            onDismissRequest = { petToDelete = null },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Text(
+                    "Eliminar mascota?",
+                    fontFamily = Urbanist,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            },
+            text = {
+                Text(
+                    "Se eliminará ${pet.name} de tu lista. Esta acción no se puede deshacer.",
+                    fontFamily = Urbanist,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deletePet(pet)
+                    petToDelete = null
+                }) {
+                    Text("Eliminar", color = Color.Red, fontFamily = Urbanist)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { petToDelete = null }) {
+                    Text(
+                        "Cancelar",
+                        fontFamily = Urbanist,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -81,6 +133,19 @@ fun MyPetsScreen(
                     navigationIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNavigateToCreatePet,
+                containerColor = HuellitasTeal,
+                contentColor = Color.White,
+                shape = CircleShape
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Agregar mascota"
+                )
+            }
         }
     ) { innerPadding ->
         Box(
@@ -119,12 +184,20 @@ fun MyPetsScreen(
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Todavía no registraste ninguna mascota",
+                            text = "No registraste ninguna mascota aún",
                             fontFamily = Urbanist,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 16.sp,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Tocá + para agregar tu primera mascota",
+                            fontFamily = Urbanist,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
                     }
                 }
@@ -136,7 +209,10 @@ fun MyPetsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(state.pets, key = { it.id }) { pet ->
-                            PetCard(pet = pet)
+                            PetCard(
+                                pet = pet,
+                                onDelete = { petToDelete = pet }
+                            )
                         }
                     }
                 }
@@ -155,6 +231,17 @@ fun MyPetsScreen(
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.error
                         )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { viewModel.retry() },
+                            colors = ButtonDefaults.buttonColors(containerColor = HuellitasTeal)
+                        ) {
+                            Text(
+                                text = "Reintentar",
+                                fontFamily = Urbanist,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }
@@ -163,7 +250,7 @@ fun MyPetsScreen(
 }
 
 @Composable
-private fun PetCard(pet: Pet) {
+private fun PetCard(pet: Pet, onDelete: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -210,7 +297,6 @@ private fun PetCard(pet: Pet) {
                     fontSize = 17.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-
                 Text(
                     text = petTypeLabel(pet.petType),
                     fontFamily = Urbanist,
@@ -218,7 +304,6 @@ private fun PetCard(pet: Pet) {
                     color = HuellitasTeal,
                     fontWeight = FontWeight.SemiBold
                 )
-
                 if (!pet.breed.isNullOrBlank()) {
                     Text(
                         text = pet.breed,
@@ -227,7 +312,6 @@ private fun PetCard(pet: Pet) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
                 if (!pet.color.isNullOrBlank()) {
                     Text(
                         text = pet.color,
@@ -236,6 +320,15 @@ private fun PetCard(pet: Pet) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Eliminar ${pet.name}",
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }
