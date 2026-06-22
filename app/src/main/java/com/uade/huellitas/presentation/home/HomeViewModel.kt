@@ -1,26 +1,30 @@
-package com.uade.huellitas.presentation.home
+﻿package com.uade.huellitas.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.uade.huellitas.data.local.NetworkMonitor
-import com.uade.huellitas.domain.model.ReferenceLocationSource
 import com.uade.huellitas.domain.model.AlertType
 import com.uade.huellitas.domain.model.PetType
+import com.uade.huellitas.domain.model.ReferenceLocationSource
 import com.uade.huellitas.domain.usecase.alert.FilterAlertsByRadiusUseCase
 import com.uade.huellitas.domain.usecase.alert.GetActiveAlertsUseCase
+import com.uade.huellitas.domain.usecase.alert.PushPendingAlertsUseCase
 import com.uade.huellitas.domain.usecase.location.ResolveReferenceLocationUseCase
 import com.uade.huellitas.domain.usecase.user.GetCurrentUserUseCase
 import java.text.Normalizer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
@@ -28,12 +32,22 @@ class HomeViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val resolveReferenceLocationUseCase: ResolveReferenceLocationUseCase,
     private val filterAlertsByRadiusUseCase: FilterAlertsByRadiusUseCase,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    private val pushPendingAlertsUseCase: PushPendingAlertsUseCase? = null
 ) : ViewModel() {
 
     private val _filterState = MutableStateFlow(HomeFilterState())
     private val _locationRefreshTrigger = MutableStateFlow(0)
     val filterState: StateFlow<HomeFilterState> = _filterState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            networkMonitor.isOnline
+                .distinctUntilChanged()
+                .filter { it }
+                .collect { pushPendingAlertsUseCase?.let { runCatching { it() } } }
+        }
+    }
 
     val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
         .stateIn(
@@ -47,14 +61,14 @@ class HomeViewModel(
         _filterState,
         getCurrentUserUseCase(),
         _locationRefreshTrigger
-    ) { alerts, filter, user, _ ->
-        Triple(alerts, filter, user)
+    ) { alerts, filterState, user, _ ->
+        Triple(alerts, filterState, user)
     }
-        .mapLatest { (alerts, filter, user) ->
-            val normalizedQuery = filter.query.normalizedForSearch()
+        .mapLatest { (alerts, filterState, user) ->
+            val normalizedQuery = filterState.query.normalizedForSearch()
             val alertsByType = alerts.filter { alert ->
-                (filter.petType == null || alert.petType == filter.petType) &&
-                    (filter.alertType == null || alert.type == filter.alertType) &&
+                (filterState.petType == null || alert.petType == filterState.petType) &&
+                    (filterState.alertType == null || alert.type == filterState.alertType) &&
                     (
                         normalizedQuery.isBlank() ||
                             alert.petName.normalizedForSearch().contains(normalizedQuery)
@@ -68,12 +82,18 @@ class HomeViewModel(
                 filterAlertsByRadiusUseCase(
                     alerts = alertsByType,
                     center = referenceLocation.location,
-                    radiusKm = filter.radiusKm
+                    radiusKm = filterState.radiusKm
                 )
             }
 
-            if (filteredAlerts.isEmpty()) HomeUiState.Empty
-            else HomeUiState.Success(alerts = filteredAlerts, currentUserName = user?.name) as HomeUiState
+            if (filteredAlerts.isEmpty()) {
+                HomeUiState.Empty
+            } else {
+                HomeUiState.Success(
+                    alerts = filteredAlerts,
+                    currentUserName = user?.name
+                ) as HomeUiState
+            }
         }
         .catch { e -> emit(HomeUiState.Error(e.message ?: "Error al cargar avisos")) }
         .stateIn(

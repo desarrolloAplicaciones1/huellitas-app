@@ -1,6 +1,7 @@
-package com.uade.huellitas.di
+﻿package com.uade.huellitas.di
 
 import android.content.Context
+import com.google.firebase.firestore.FirebaseFirestore
 import com.uade.huellitas.data.local.AppDatabase
 import com.uade.huellitas.data.local.NetworkMonitor
 import com.uade.huellitas.data.local.OnboardingPreferences
@@ -8,16 +9,16 @@ import com.uade.huellitas.data.remote.FirebaseAuthDataSource
 import com.uade.huellitas.data.remote.FirestoreAlertDataSource
 import com.uade.huellitas.data.remote.FirestorePetDataSource
 import com.uade.huellitas.data.remote.FirestoreUserDataSource
+import com.uade.huellitas.data.repository.AlertRepository as AlertRepositoryImpl
 import com.uade.huellitas.data.repository.AndroidDeviceLocationRepository
 import com.uade.huellitas.data.repository.AndroidGeocodingRepository
-import com.uade.huellitas.data.repository.AlertRepository as AlertRepositoryImpl
 import com.uade.huellitas.data.repository.FirebasePhotoStorageRepository
 import com.uade.huellitas.data.repository.PetRepository as PetRepositoryImpl
 import com.uade.huellitas.data.repository.PreferencesSettingsRepository
 import com.uade.huellitas.data.repository.UserRepository as UserRepositoryImpl
-import com.uade.huellitas.domain.repository.GeocodingRepository as GeocodingRepositoryContract
 import com.uade.huellitas.domain.repository.AlertRepository as AlertRepositoryContract
 import com.uade.huellitas.domain.repository.DeviceLocationRepository as DeviceLocationRepositoryContract
+import com.uade.huellitas.domain.repository.GeocodingRepository as GeocodingRepositoryContract
 import com.uade.huellitas.domain.repository.PetRepository as PetRepositoryContract
 import com.uade.huellitas.domain.repository.PhotoStorageRepository as PhotoStorageRepositoryContract
 import com.uade.huellitas.domain.repository.SettingsRepository as SettingsRepositoryContract
@@ -28,6 +29,7 @@ import com.uade.huellitas.domain.usecase.alert.FilterAlertsByRadiusUseCase
 import com.uade.huellitas.domain.usecase.alert.GetActiveAlertsUseCase
 import com.uade.huellitas.domain.usecase.alert.GetAlertByIdUseCase
 import com.uade.huellitas.domain.usecase.alert.GetMyAlertsUseCase
+import com.uade.huellitas.domain.usecase.alert.PushPendingAlertsUseCase
 import com.uade.huellitas.domain.usecase.alert.ResolveAlertUseCase
 import com.uade.huellitas.domain.usecase.alert.SyncAlertsUseCase
 import com.uade.huellitas.domain.usecase.alert.UpdateAlertUseCase
@@ -45,6 +47,7 @@ import com.uade.huellitas.domain.usecase.media.DeletePhotoUseCase
 import com.uade.huellitas.domain.usecase.media.UploadAlertPhotoUseCase
 import com.uade.huellitas.domain.usecase.media.UploadPetPhotoUseCase
 import com.uade.huellitas.domain.usecase.media.UploadProfilePhotoUseCase
+import com.uade.huellitas.domain.usecase.onboarding.CompleteOnboardingUseCase
 import com.uade.huellitas.domain.usecase.pet.DeletePetUseCase
 import com.uade.huellitas.domain.usecase.pet.GetMyPetsUseCase
 import com.uade.huellitas.domain.usecase.pet.GetPetByIdUseCase
@@ -55,7 +58,6 @@ import com.uade.huellitas.domain.usecase.settings.SetAlertRadiusUseCase
 import com.uade.huellitas.domain.usecase.settings.SetDarkModeUseCase
 import com.uade.huellitas.domain.usecase.settings.SetFollowSystemThemeUseCase
 import com.uade.huellitas.domain.usecase.settings.SetOfflineModeUseCase
-import com.uade.huellitas.domain.usecase.onboarding.CompleteOnboardingUseCase
 import com.uade.huellitas.domain.usecase.user.ChangePasswordUseCase
 import com.uade.huellitas.domain.usecase.user.GetCurrentUserUseCase
 import com.uade.huellitas.domain.usecase.user.SyncCurrentUserProfileUseCase
@@ -66,8 +68,11 @@ import com.uade.huellitas.presentation.home.HomeViewModel
 import com.uade.huellitas.presentation.onboarding.OnboardingViewModel
 import com.uade.huellitas.presentation.profile.alerts.MyAlertsViewModel
 import com.uade.huellitas.presentation.profile.pets.MyPetsViewModel
+import com.uade.huellitas.showAlertNotification
+import kotlinx.coroutines.tasks.await
 
 class AppContainer(context: Context) {
+    private val appContext = context.applicationContext
     private val database = AppDatabase.getInstance(context)
 
     val onboardingPreferences = OnboardingPreferences(context)
@@ -119,6 +124,7 @@ class AppContainer(context: Context) {
     val resolveAlertUseCase = ResolveAlertUseCase(alertRepository)
     val deleteAlertUseCase = DeleteAlertUseCase(alertRepository)
     val syncAlertsUseCase = SyncAlertsUseCase(alertRepository)
+    val pushPendingAlertsUseCase = PushPendingAlertsUseCase(alertRepository)
 
     val getMyPetsUseCase = GetMyPetsUseCase(petRepository, userRepository)
     val getPetByIdUseCase = GetPetByIdUseCase(petRepository)
@@ -154,14 +160,31 @@ class AppContainer(context: Context) {
         getCurrentUserUseCase,
         resolveReferenceLocationUseCase,
         filterAlertsByRadiusUseCase,
-        networkMonitor
+        networkMonitor,
+        pushPendingAlertsUseCase
     )
     val createAlertViewModel = CreateAlertViewModel(
         createAlertUseCase,
         getCurrentUserIdUseCase,
         getCurrentUserUseCase,
         geocodeAddressUseCase,
-        uploadAlertPhotoUseCase
+        uploadAlertPhotoUseCase,
+        persistPublishedNotification = { title, body, alertId, createdAt ->
+            FirebaseFirestore.getInstance()
+                .collection("notifications")
+                .add(
+                    mapOf(
+                        "title" to title,
+                        "body" to body,
+                        "alertId" to alertId,
+                        "createdAt" to createdAt
+                    )
+                )
+                .await()
+        },
+        showLocalNotification = { title, body ->
+            showAlertNotification(appContext, title, body)
+        }
     )
     val myAlertsViewModel = MyAlertsViewModel(getMyAlertsUseCase)
     val myPetsViewModel = MyPetsViewModel(getMyPetsUseCase, deletePetUseCase)

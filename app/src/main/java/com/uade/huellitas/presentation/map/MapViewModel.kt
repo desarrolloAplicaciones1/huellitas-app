@@ -44,6 +44,9 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     private val _userLocation = MutableStateFlow<LatLng?>(null)
     val userLocation: StateFlow<LatLng?> = _userLocation.asStateFlow()
 
+    private val _isResolvingLocation = MutableStateFlow(false)
+    val isResolvingLocation: StateFlow<Boolean> = _isResolvingLocation.asStateFlow()
+
     val uiState: StateFlow<MapUiState> = combine(
         getActiveAlertsUseCase(),
         getAppSettingsUseCase(),
@@ -98,20 +101,30 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         if (!hasPermission) return
 
         refreshReferenceLocation()
+        _isResolvingLocation.value = true
 
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            location?.let {
-                _userLocation.value = LatLng(it.latitude, it.longitude)
-            } ?: run {
-                val request = CurrentLocationRequest.Builder()
-                    .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-                    .build()
-                fusedLocationClient.getCurrentLocation(request, null)
-                    .addOnSuccessListener { loc ->
-                        loc?.let { _userLocation.value = LatLng(loc.latitude, loc.longitude) }
-                    }
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location ->
+                location?.let {
+                    _userLocation.value = LatLng(it.latitude, it.longitude)
+                    _isResolvingLocation.value = false
+                } ?: run {
+                    val request = CurrentLocationRequest.Builder()
+                        .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                        .build()
+                    fusedLocationClient.getCurrentLocation(request, null)
+                        .addOnSuccessListener { loc ->
+                            loc?.let { _userLocation.value = LatLng(loc.latitude, loc.longitude) }
+                            _isResolvingLocation.value = false
+                        }
+                        .addOnFailureListener {
+                            _isResolvingLocation.value = false
+                        }
+                }
             }
-        }
+            .addOnFailureListener {
+                _isResolvingLocation.value = false
+            }
     }
 
     private fun Alert.toMapAlert(center: Location): MapAlert {

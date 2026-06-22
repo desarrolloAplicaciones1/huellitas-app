@@ -1,4 +1,4 @@
-package com.uade.huellitas.presentation.alert.create
+﻿package com.uade.huellitas.presentation.alert.create
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -26,7 +26,10 @@ class CreateAlertViewModel(
     private val getCurrentUserIdUseCase: GetCurrentUserIdUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val geocodeAddressUseCase: GeocodeAddressUseCase,
-    private val uploadAlertPhotoUseCase: UploadAlertPhotoUseCase
+    private val uploadAlertPhotoUseCase: UploadAlertPhotoUseCase,
+    private val persistPublishedNotification: suspend (String, String, String, Long) -> Unit =
+        { _, _, _, _ -> },
+    private val showLocalNotification: (String, String) -> Unit = { _, _ -> }
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CreateAlertUiState>(CreateAlertUiState.Idle)
@@ -62,9 +65,11 @@ class CreateAlertViewModel(
         contactPhoneInitialized = true
         _formState.value = _formState.value.copy(contactPhone = value)
     }
+
     fun onLocationChange(lat: Double, lng: Double, address: String) {
         _formState.value = _formState.value.copy(latitude = lat, longitude = lng, address = address)
     }
+
     fun onPhotoSelected(uri: Uri) {
         _formState.value = _formState.value.copy(selectedPhotoUri = uri)
     }
@@ -78,7 +83,7 @@ class CreateAlertViewModel(
         }
 
         val ownerId = getCurrentUserIdUseCase() ?: run {
-            _uiState.value = CreateAlertUiState.Error("No hay sesion activa. Iniciá sesión e intentá de nuevo.")
+            _uiState.value = CreateAlertUiState.Error("No hay sesion activa. Inicia sesion e intenta de nuevo.")
             return
         }
 
@@ -89,15 +94,19 @@ class CreateAlertViewModel(
 
                 val userLocationHint = try {
                     getCurrentUserUseCase().first()?.location
-                } catch (_: Exception) { null }
+                } catch (_: Exception) {
+                    null
+                }
 
                 val resolvedLocation = resolveLocation(form, userLocationHint)
 
                 val uploadedPhotoUrl = form.selectedPhotoUri?.let { uri ->
+                    _uiState.value = CreateAlertUiState.UploadingPhoto
                     runCatching { uploadAlertPhotoUseCase(ownerId, uri.toString()) }
+                        .onSuccess { _uiState.value = CreateAlertUiState.Loading }
                         .getOrElse { error ->
                             throw IllegalStateException(
-                                "No se pudo subir la foto del aviso. Verificá Firebase Storage e intentá de nuevo.",
+                                "No se pudo subir la foto. El aviso puede publicarse sin foto: elimina la imagen y vuelve a intentarlo.",
                                 error
                             )
                         }
@@ -124,10 +133,20 @@ class CreateAlertViewModel(
                 )
 
                 createAlertUseCase(alert)
+
+                val typeLabel = if (form.alertType == AlertType.LOST) "perdida" else "encontrada"
+                val notifTitle = "Nueva mascota $typeLabel cerca tuyo"
+                val notifBody = "${form.petName.trim()} - ${form.address.ifBlank { "sin direccion" }}"
+
+                runCatching {
+                    persistPublishedNotification(notifTitle, notifBody, alert.id, alert.createdAt)
+                }
+                runCatching { showLocalNotification(notifTitle, notifBody) }
+
                 _uiState.value = CreateAlertUiState.Success
             } catch (e: Exception) {
                 _uiState.value = CreateAlertUiState.Error(
-                    e.message ?: "No se pudo publicar. Revisá tu conexión."
+                    e.message ?: "No se pudo publicar. Revisa tu conexion."
                 )
             }
         }
