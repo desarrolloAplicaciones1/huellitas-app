@@ -76,6 +76,7 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.uade.huellitas.domain.model.PetType
+import com.uade.huellitas.domain.model.ReferenceLocationSource
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -92,7 +93,6 @@ fun MapScreen(
     viewModel: MapViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val userLocation by viewModel.userLocation.collectAsStateWithLifecycle()
     val isResolvingLocation by viewModel.isResolvingLocation.collectAsStateWithLifecycle()
     var showRadiusSheet by remember { mutableStateOf(false) }
     var showBottomSheet by remember { mutableStateOf(true) }
@@ -143,7 +143,6 @@ fun MapScreen(
             is MapUiState.Success -> {
                 GoogleMapView(
                     state = state,
-                    userLocation = userLocation,
                     onAlertTap = { selectedAlert = it }
                 )
 
@@ -164,9 +163,9 @@ fun MapScreen(
                         color = HuellitasTeal,
                         trackColor = HuellitasTeal.copy(alpha = 0.2f)
                     )
-                } else if (userLocation == null) {
+                } else if (state.centerSource != ReferenceLocationSource.CURRENT_DEVICE) {
                     Text(
-                        "Activá la ubicación para ver alertas de tu zona",
+                        mapFallbackMessage(state.centerSource, state.centerLabel),
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .statusBarsPadding()
@@ -328,7 +327,6 @@ fun MapScreen(
 @Composable
 private fun GoogleMapView(
     state: MapUiState.Success,
-    userLocation: LatLng?,
     onAlertTap: (MapAlert) -> Unit
 ) {
     val center = remember(state.center) {
@@ -347,14 +345,6 @@ private fun GoogleMapView(
         cameraPositionState.animate(
             CameraUpdateFactory.newLatLngZoom(center, 13f)
         )
-    }
-
-    LaunchedEffect(userLocation) {
-        userLocation?.let {
-            cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngZoom(it, 14f)
-            )
-        }
     }
 
     GoogleMap(
@@ -392,6 +382,13 @@ private fun GoogleMapView(
         }
     }
 }
+
+private fun mapFallbackMessage(source: ReferenceLocationSource, centerLabel: String): String =
+    when (source) {
+        ReferenceLocationSource.USER_PROFILE -> "Usando $centerLabel como referencia"
+        ReferenceLocationSource.DEFAULT -> "Activa la ubicacion para ver alertas de tu zona"
+        ReferenceLocationSource.CURRENT_DEVICE -> centerLabel
+    }
 
 @Composable
 private fun BackButton(onBack: () -> Unit) {
@@ -638,3 +635,5 @@ private fun PetMapCard(alert: MapAlert, onClick: () -> Unit) {
         }
     }
 }
+
+
