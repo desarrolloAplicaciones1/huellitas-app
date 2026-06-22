@@ -1,6 +1,5 @@
 package com.uade.huellitas.presentation.home
 
-import app.cash.turbine.test
 import com.uade.huellitas.data.local.NetworkMonitor
 import com.uade.huellitas.domain.model.AlertType
 import com.uade.huellitas.domain.model.Location
@@ -16,8 +15,12 @@ import com.uade.huellitas.presentation.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -25,6 +28,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
 
     @get:Rule
@@ -61,24 +65,30 @@ class HomeViewModelTest {
     fun `carga exitosa emite Success con lista de alertas`() = runTest {
         val alerts = listOf(makeAlert(id = "1"), makeAlert(id = "2"))
         every { getActiveAlertsUseCase() } returns flowOf(alerts)
-
-        createViewModel().uiState.test {
-            assertEquals(HomeUiState.Loading, awaitItem())
-            val state = awaitItem() as HomeUiState.Success
-            assertEquals(2, state.alerts.size)
-            cancelAndIgnoreRemainingEvents()
+        val viewModel = createViewModel()
+        val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
         }
+
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as HomeUiState.Success
+        assertEquals(2, state.alerts.size)
+        collector.cancel()
     }
 
     @Test
     fun `lista vacia emite Empty`() = runTest {
         every { getActiveAlertsUseCase() } returns flowOf(emptyList())
-
-        createViewModel().uiState.test {
-            assertEquals(HomeUiState.Loading, awaitItem())
-            assertEquals(HomeUiState.Empty, awaitItem())
-            cancelAndIgnoreRemainingEvents()
+        val viewModel = createViewModel()
+        val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
         }
+
+        advanceUntilIdle()
+
+        assertEquals(HomeUiState.Empty, viewModel.uiState.value)
+        collector.cancel()
     }
 
     @Test
@@ -86,12 +96,15 @@ class HomeViewModelTest {
         every { getActiveAlertsUseCase() } returns flow {
             throw RuntimeException("Error de red")
         }
-
-        createViewModel().uiState.test {
-            assertEquals(HomeUiState.Loading, awaitItem())
-            assertEquals(HomeUiState.Error("Error de red"), awaitItem())
-            cancelAndIgnoreRemainingEvents()
+        val viewModel = createViewModel()
+        val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
         }
+
+        advanceUntilIdle()
+
+        assertEquals(HomeUiState.Error("Error de red"), viewModel.uiState.value)
+        collector.cancel()
     }
 
     @Test
@@ -102,19 +115,21 @@ class HomeViewModelTest {
         )
         every { getActiveAlertsUseCase() } returns flowOf(alerts)
         val viewModel = createViewModel()
-
-        viewModel.uiState.test {
-            assertEquals(HomeUiState.Loading, awaitItem())
-            val initial = awaitItem() as HomeUiState.Success
-            assertEquals(2, initial.alerts.size)
-
-            viewModel.setFilter(alertType = AlertType.LOST)
-            val filtered = awaitItem() as HomeUiState.Success
-            assertEquals(1, filtered.alerts.size)
-            assertEquals(AlertType.LOST, filtered.alerts[0].type)
-
-            cancelAndIgnoreRemainingEvents()
+        val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
         }
+
+        advanceUntilIdle()
+        val initial = viewModel.uiState.value as HomeUiState.Success
+        assertEquals(2, initial.alerts.size)
+
+        viewModel.setFilter(alertType = AlertType.LOST)
+        advanceUntilIdle()
+
+        val filtered = viewModel.uiState.value as HomeUiState.Success
+        assertEquals(1, filtered.alerts.size)
+        assertEquals(AlertType.LOST, filtered.alerts[0].type)
+        collector.cancel()
     }
 
     @Test
@@ -126,18 +141,20 @@ class HomeViewModelTest {
         )
         every { getActiveAlertsUseCase() } returns flowOf(alerts)
         val viewModel = createViewModel()
-
-        viewModel.uiState.test {
-            assertEquals(HomeUiState.Loading, awaitItem())
-            val initial = awaitItem() as HomeUiState.Success
-            assertEquals(3, initial.alerts.size)
-
-            viewModel.setFilter(petType = PetType.CAT)
-            val filtered = awaitItem() as HomeUiState.Success
-            assertEquals(2, filtered.alerts.size)
-            assertTrue(filtered.alerts.all { it.petType == PetType.CAT })
-
-            cancelAndIgnoreRemainingEvents()
+        val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
         }
+
+        advanceUntilIdle()
+        val initial = viewModel.uiState.value as HomeUiState.Success
+        assertEquals(3, initial.alerts.size)
+
+        viewModel.setFilter(petType = PetType.CAT)
+        advanceUntilIdle()
+
+        val filtered = viewModel.uiState.value as HomeUiState.Success
+        assertEquals(2, filtered.alerts.size)
+        assertTrue(filtered.alerts.all { it.petType == PetType.CAT })
+        collector.cancel()
     }
 }

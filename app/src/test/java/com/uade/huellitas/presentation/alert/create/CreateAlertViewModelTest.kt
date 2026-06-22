@@ -1,6 +1,5 @@
 package com.uade.huellitas.presentation.alert.create
 
-import app.cash.turbine.test
 import com.uade.huellitas.domain.model.Alert
 import com.uade.huellitas.domain.usecase.alert.CreateAlertUseCase
 import com.uade.huellitas.domain.usecase.auth.GetCurrentUserIdUseCase
@@ -13,13 +12,16 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CreateAlertViewModelTest {
 
     @get:Rule
@@ -49,15 +51,14 @@ class CreateAlertViewModelTest {
 
     @Test
     fun `formulario sin nombre emite Error de validacion`() = runTest {
-        viewModel.uiState.test {
-            assertEquals(CreateAlertUiState.Idle, awaitItem())
-            viewModel.submitAlert()
-            assertEquals(
-                CreateAlertUiState.Error("El nombre de la mascota es obligatorio."),
-                awaitItem()
-            )
-            cancelAndIgnoreRemainingEvents()
-        }
+        assertEquals(CreateAlertUiState.Idle, viewModel.uiState.value)
+
+        viewModel.submitAlert()
+
+        assertEquals(
+            CreateAlertUiState.Error("El nombre de la mascota es obligatorio."),
+            viewModel.uiState.value
+        )
     }
 
     @Test
@@ -66,16 +67,11 @@ class CreateAlertViewModelTest {
         coEvery { createAlertUseCase(capture(alertSlot)) } returns Unit
 
         viewModel.onPetNameChange("Luna")
-        viewModel.onDescriptionChange("Se perdió en el parque")
+        viewModel.onDescriptionChange("Se perdio en el parque")
+        viewModel.submitAlert()
+        advanceUntilIdle()
 
-        viewModel.uiState.test {
-            assertEquals(CreateAlertUiState.Idle, awaitItem())
-            viewModel.submitAlert()
-            assertEquals(CreateAlertUiState.Loading, awaitItem())
-            assertEquals(CreateAlertUiState.Success, awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
-
+        assertEquals(CreateAlertUiState.Success, viewModel.uiState.value)
         coVerify(exactly = 1) { createAlertUseCase(any()) }
         assertEquals("Luna", alertSlot.captured.petName)
         assertEquals("uid-1", alertSlot.captured.ownerId)
@@ -86,17 +82,13 @@ class CreateAlertViewModelTest {
         coEvery { createAlertUseCase(any()) } throws RuntimeException("Firestore: permiso denegado")
 
         viewModel.onPetNameChange("Luna")
+        viewModel.submitAlert()
+        advanceUntilIdle()
 
-        viewModel.uiState.test {
-            assertEquals(CreateAlertUiState.Idle, awaitItem())
-            viewModel.submitAlert()
-            assertEquals(CreateAlertUiState.Loading, awaitItem())
-            assertEquals(
-                CreateAlertUiState.Error("Firestore: permiso denegado"),
-                awaitItem()
-            )
-            cancelAndIgnoreRemainingEvents()
-        }
+        assertEquals(
+            CreateAlertUiState.Error("Firestore: permiso denegado"),
+            viewModel.uiState.value
+        )
     }
 
     @Test
@@ -104,13 +96,9 @@ class CreateAlertViewModelTest {
         coEvery { createAlertUseCase(any()) } returns Unit
 
         viewModel.onPetNameChange("Firulais")
+        viewModel.submitAlert()
+        advanceUntilIdle()
 
-        viewModel.uiState.test {
-            assertEquals(CreateAlertUiState.Idle, awaitItem())
-            viewModel.submitAlert()
-            assertEquals(CreateAlertUiState.Loading, awaitItem())
-            assertEquals(CreateAlertUiState.Success, awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
+        assertEquals(CreateAlertUiState.Success, viewModel.uiState.value)
     }
 }

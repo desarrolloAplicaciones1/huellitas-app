@@ -141,4 +141,4 @@ class AlertRepository(
 }
 
 private fun Exception.isPermissionDenied(): Boolean =
-    (this as? FirebaseFirestoreException)?.code == FirebaseFirestoreException.Code.PERMISSION_DENIED
+    this is FirebaseFirestoreException && this.code.name == "PERMISSION_DENIED"
