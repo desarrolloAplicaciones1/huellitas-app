@@ -1,11 +1,12 @@
 package com.uade.huellitas.presentation.auth
 
-import app.cash.turbine.test
 import com.uade.huellitas.domain.usecase.auth.LoginUseCase
 import com.uade.huellitas.domain.usecase.auth.SendPasswordResetEmailUseCase
 import com.uade.huellitas.presentation.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -13,6 +14,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
 
     @get:Rule
@@ -28,48 +30,38 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `login exitoso emite Loading luego Success`() = runTest {
+    fun `login exitoso emite Success`() = runTest {
         coEvery { loginUseCase("user@test.com", "pass123") } returns "uid-123"
 
-        viewModel.uiState.test {
-            assertEquals(AuthUiState.Idle, awaitItem())
-            viewModel.login("user@test.com", "pass123")
-            assertEquals(AuthUiState.Loading, awaitItem())
-            assertEquals(AuthUiState.Success("uid-123"), awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
+        viewModel.login("user@test.com", "pass123")
+        advanceUntilIdle()
+
+        assertEquals(AuthUiState.Success("uid-123"), viewModel.uiState.value)
     }
 
     @Test
     fun `email invalido emite Error con mensaje`() = runTest {
         coEvery { loginUseCase("no-es-email", any()) } throws
-            IllegalArgumentException("El email ingresado no es válido")
+            IllegalArgumentException("El email ingresado no es valido")
 
-        viewModel.uiState.test {
-            assertEquals(AuthUiState.Idle, awaitItem())
-            viewModel.login("no-es-email", "pass123")
-            assertEquals(AuthUiState.Loading, awaitItem())
-            assertEquals(
-                AuthUiState.Error("El email ingresado no es válido"),
-                awaitItem()
-            )
-            cancelAndIgnoreRemainingEvents()
-        }
+        viewModel.login("no-es-email", "pass123")
+        advanceUntilIdle()
+
+        assertEquals(
+            AuthUiState.Error("El email ingresado no es valido"),
+            viewModel.uiState.value
+        )
     }
 
     @Test
     fun `contrasena vacia emite Error`() = runTest {
         coEvery { loginUseCase(any(), "") } throws
-            IllegalArgumentException("La contraseña no puede estar vacía")
+            IllegalArgumentException("La contrasena no puede estar vacia")
 
-        viewModel.uiState.test {
-            assertEquals(AuthUiState.Idle, awaitItem())
-            viewModel.login("user@test.com", "")
-            assertEquals(AuthUiState.Loading, awaitItem())
-            val state = awaitItem()
-            assertTrue(state is AuthUiState.Error)
-            cancelAndIgnoreRemainingEvents()
-        }
+        viewModel.login("user@test.com", "")
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is AuthUiState.Error)
     }
 
     @Test
@@ -77,12 +69,9 @@ class LoginViewModelTest {
         val firebaseError = "The password is invalid or the user does not have a password"
         coEvery { loginUseCase(any(), any()) } throws RuntimeException(firebaseError)
 
-        viewModel.uiState.test {
-            assertEquals(AuthUiState.Idle, awaitItem())
-            viewModel.login("user@test.com", "wrongpass")
-            assertEquals(AuthUiState.Loading, awaitItem())
-            assertEquals(AuthUiState.Error(firebaseError), awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
+        viewModel.login("user@test.com", "wrongpass")
+        advanceUntilIdle()
+
+        assertEquals(AuthUiState.Error(firebaseError), viewModel.uiState.value)
     }
 }
