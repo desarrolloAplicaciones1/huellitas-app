@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -354,17 +353,6 @@ fun ProfileScreen(
                     icon = { tint -> Icon(Icons.Default.DarkMode, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp)) }
                 )
 
-                HorizontalDivider(color = if (isDark) Color(0xFF333333) else Color(0xFFEEEEEE), modifier = Modifier.padding(horizontal = 12.dp))
-
-                SettingsSwitchRow(
-                    title = "Modo offline",
-                    subtitle = "Permite trabajar con los datos cacheados localmente",
-                    checked = settings.offlineModeEnabled,
-                    onCheckedChange = viewModel::setOfflineMode,
-                    enabled = true,
-                    darkMode = isDark,
-                    icon = { tint -> Icon(Icons.Default.WifiOff, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp)) }
-                )
             }
         }
 
