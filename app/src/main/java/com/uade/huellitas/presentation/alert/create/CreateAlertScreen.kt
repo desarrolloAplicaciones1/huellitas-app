@@ -393,6 +393,8 @@ fun CreateAlertScreen(
                         phoneError = if (formState.contactPhone.isBlank()) "El telefono es obligatorio" else null
                         if (nameError == null && descriptionError == null && barrioError == null && phoneError == null) {
                             viewModel.submitAlert()
+                        } else {
+                            scope.launch { snackbarHostState.showSnackbar("Completá todos los campos obligatorios") }
                         }
                     },
                     modifier = Modifier
