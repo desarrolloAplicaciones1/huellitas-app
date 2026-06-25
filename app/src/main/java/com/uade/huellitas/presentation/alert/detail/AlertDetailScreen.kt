@@ -82,6 +82,7 @@ fun AlertDetailScreen(
                 AlertDetailContent(
                     alert = state.alert,
                     isOwner = state.isOwner,
+                    ownerName = state.ownerName,
                     isOnline = isOnline,
                     distanceLabel = distanceLabel,
                     onBack = onBack,
@@ -109,6 +110,7 @@ fun AlertDetailScreen(
 private fun AlertDetailContent(
     alert: Alert,
     isOwner: Boolean,
+    ownerName: String? = null,
     isOnline: Boolean,
     distanceLabel: String?,
     onBack: () -> Unit,
@@ -423,6 +425,19 @@ private fun AlertDetailContent(
                         fontFamily = Urbanist, fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+                if (ownerName != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Person, contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Publicado por $ownerName",
+                            fontFamily = Urbanist, fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 

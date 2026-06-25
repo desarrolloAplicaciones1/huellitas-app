@@ -1,6 +1,11 @@
 ﻿package com.uade.huellitas.presentation.alert.express
 
+import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,8 +23,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,6 +37,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,11 +50,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import java.io.File
 import com.uade.huellitas.domain.model.AlertType
 import com.uade.huellitas.domain.model.PetType
 import com.uade.huellitas.ui.theme.HuellitasTeal
@@ -60,6 +74,42 @@ fun ExpressAlertScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val formState by viewModel.formState.collectAsStateWithLifecycle()
     var barrioError by remember { mutableStateOf<String?>(null) }
+    var showPhotoDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    val cameraUri = remember { createCameraUri(context) }
+
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let(viewModel::onPhotoSelected)
+    }
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) viewModel.onPhotoSelected(cameraUri)
+    }
+
+    if (showPhotoDialog) {
+        AlertDialog(
+            onDismissRequest = { showPhotoDialog = false },
+            title = { Text("Agregar foto", fontFamily = Urbanist) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(
+                        onClick = { showPhotoDialog = false; galleryLauncher.launch("image/*") },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Elegir de galería", fontFamily = Urbanist, color = HuellitasTeal) }
+                    TextButton(
+                        onClick = { showPhotoDialog = false; cameraLauncher.launch(cameraUri) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Sacar foto", fontFamily = Urbanist, color = HuellitasTeal) }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showPhotoDialog = false }) {
+                    Text("Cancelar", fontFamily = Urbanist)
+                }
+            }
+        )
+    }
 
     LaunchedEffect(uiState) {
         if (uiState is ExpressAlertUiState.Success) {
@@ -153,6 +203,39 @@ fun ExpressAlertScreen(
                         fontWeight = FontWeight.Medium,
                         color = HuellitasTeal
                     )
+                }
+            }
+
+            ExpressLabel("FOTO")
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFF9F9F9))
+                    .border(1.dp, Color(0xFFDDDDDD), RoundedCornerShape(8.dp))
+                    .clickable { showPhotoDialog = true },
+                contentAlignment = Alignment.Center
+            ) {
+                if (formState.selectedPhotoUri != null) {
+                    AsyncImage(
+                        model = formState.selectedPhotoUri,
+                        contentDescription = "Foto seleccionada",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = null, tint = HuellitasTeal, modifier = Modifier.size(28.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Agregar foto (opcional)", fontFamily = Urbanist, fontSize = 13.sp, color = Color(0xFF888888))
+                    }
+                }
+            }
+            if (formState.selectedPhotoUri != null) {
+                TextButton(onClick = viewModel::clearPhoto) {
+                    Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                    Text(" Quitar foto", fontFamily = Urbanist, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
                 }
             }
 
@@ -286,6 +369,12 @@ fun ExpressAlertScreen(
             }
         }
     }
+}
+
+private fun createCameraUri(context: Context): Uri {
+    val dir = File(context.cacheDir, "camera").also { it.mkdirs() }
+    val file = File(dir, "photo_${System.currentTimeMillis()}.jpg")
+    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 }
 
 @Composable

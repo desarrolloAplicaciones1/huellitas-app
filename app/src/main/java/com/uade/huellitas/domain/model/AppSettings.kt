@@ -3,6 +3,6 @@
 data class AppSettings(
     val followSystemTheme: Boolean = true,
     val darkModeEnabled: Boolean = false,
-    val alertRadiusKm: Int = 3,
+    val alertRadiusKm: Int = 15,
     val offlineModeEnabled: Boolean = true
 )

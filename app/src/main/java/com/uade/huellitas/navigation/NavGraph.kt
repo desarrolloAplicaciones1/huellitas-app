@@ -18,6 +18,7 @@ import com.uade.huellitas.presentation.map.MapScreen
 import com.uade.huellitas.presentation.onboarding.OnboardingScreen
 import com.uade.huellitas.presentation.profile.edit.EditProfileScreen
 import com.uade.huellitas.presentation.profile.ProfileScreen
+import com.uade.huellitas.presentation.notifications.NotificationsScreen
 import com.uade.huellitas.presentation.profile.alerts.MyAlertsScreen
 import com.uade.huellitas.presentation.profile.pets.CreatePetScreen
 import com.uade.huellitas.presentation.profile.pets.MyPetsScreen
@@ -92,7 +93,17 @@ fun NavGraph(
                 onNavigateToCreateAlert = { navController.navigate(Screen.CreateAlert.route) },
                 onNavigateToExpressAlert = { navController.navigate(Screen.ExpressAlert.route) },
                 onNavigateToMap = { navController.navigate(Screen.Map.route) },
-                onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
+                onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
+                onNavigateToNotifications = { navController.navigate(Screen.Notifications.route) }
+            )
+        }
+
+        composable(Screen.Notifications.route) {
+            NotificationsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToDetail = { alertId ->
+                    navController.navigate(Screen.AlertDetail.createRoute(alertId))
+                }
             )
         }
 

@@ -70,6 +70,12 @@ class CreateAlertViewModel(
         _formState.value = _formState.value.copy(latitude = lat, longitude = lng, address = address)
     }
 
+    fun onAddressTyped(address: String) {
+        _formState.value = _formState.value.copy(address = address, latitude = null, longitude = null)
+    }
+
+    fun onStreetChange(value: String) { _formState.value = _formState.value.copy(street = value) }
+
     fun onPhotoSelected(uri: Uri) {
         _formState.value = _formState.value.copy(selectedPhotoUri = uri)
     }
@@ -141,7 +147,6 @@ class CreateAlertViewModel(
                 runCatching {
                     persistPublishedNotification(notifTitle, notifBody, alert.id, alert.createdAt)
                 }
-                runCatching { showLocalNotification(notifTitle, notifBody) }
 
                 _uiState.value = CreateAlertUiState.Success
             } catch (e: Exception) {
@@ -157,23 +162,29 @@ class CreateAlertViewModel(
     }
 
     private suspend fun resolveLocation(form: CreateAlertFormState, userLocationHint: String?): Location {
-        if (form.address.isNotBlank()) {
-            val query = buildGeocodingQuery(form.address, userLocationHint)
+        val displayAddress = listOf(form.street, form.address)
+            .filter { it.isNotBlank() }
+            .joinToString(", ")
+            .ifBlank { null }
+
+        if (displayAddress != null) {
+            val query = buildGeocodingQuery(form.street, form.address, userLocationHint)
             val geocoded = runCatching { geocodeAddressUseCase(query) }.getOrNull()
-            if (geocoded != null) return geocoded
+            if (geocoded != null) return geocoded.copy(address = displayAddress)
         }
         return Location(
             latitude = form.latitude ?: DEFAULT_LATITUDE,
             longitude = form.longitude ?: DEFAULT_LONGITUDE,
-            address = form.address.ifBlank { null }
+            address = displayAddress ?: form.address.ifBlank { null }
         )
     }
 
-    private fun buildGeocodingQuery(address: String, userLocationHint: String?): String {
-        val normalizedAddress = address.trim()
-        if (normalizedAddress.contains(",")) return normalizedAddress
+    private fun buildGeocodingQuery(street: String, address: String, userLocationHint: String?): String {
+        val parts = listOf(street.trim(), address.trim()).filter { it.isNotBlank() }
+        val combined = parts.joinToString(", ")
+        if (combined.contains(",")) return combined
         val contextHint = userLocationHint?.trim()?.takeIf { it.isNotEmpty() } ?: DEFAULT_LOCATION_HINT
-        return "$normalizedAddress, $contextHint"
+        return "$combined, $contextHint"
     }
 
     companion object {

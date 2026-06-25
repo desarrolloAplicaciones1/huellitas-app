@@ -26,5 +26,6 @@ data class CreateAlertFormState(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val address: String = "",
+    val street: String = "",
     val selectedPhotoUri: Uri? = null
 )
