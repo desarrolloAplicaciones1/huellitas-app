@@ -24,6 +24,12 @@ interface AlertDao {
     @Delete
     suspend fun delete(alert: AlertEntity)
 
+    @Query("DELETE FROM alerts WHERE id = :id AND pendingSync = 0")
+    suspend fun deleteById(id: String)
+
+    @Query("SELECT * FROM alerts WHERE status = 'ACTIVE' AND pendingSync = 0")
+    suspend fun getActiveAlertsSnapshot(): List<AlertEntity>
+
     @Query("SELECT * FROM alerts WHERE pendingSync = 1")
     suspend fun getPendingAlerts(): List<AlertEntity>
 }
