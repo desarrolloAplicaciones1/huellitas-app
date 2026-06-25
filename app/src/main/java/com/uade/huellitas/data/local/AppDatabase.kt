@@ -17,7 +17,7 @@ import com.uade.huellitas.data.local.entity.UserEntity
 
 @Database(
     entities = [UserEntity::class, PetEntity::class, AlertEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -36,7 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "patitas_db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                     .also { INSTANCE = it }
             }
@@ -53,6 +53,52 @@ abstract class AppDatabase : RoomDatabase() {
         private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE alerts ADD COLUMN ownerName TEXT")
+            }
+        }
+
+        // Rebuilds alerts table without ownerId/petId foreign keys so alerts from
+        // other users can be inserted even when their owner/pet rows are absent locally.
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `alerts_new` (
+                        `id` TEXT NOT NULL,
+                        `ownerId` TEXT NOT NULL,
+                        `ownerName` TEXT,
+                        `petId` TEXT,
+                        `type` TEXT NOT NULL,
+                        `status` TEXT NOT NULL,
+                        `petName` TEXT NOT NULL,
+                        `petType` TEXT NOT NULL,
+                        `breed` TEXT,
+                        `color` TEXT,
+                        `size` TEXT,
+                        `hasCollar` INTEGER,
+                        `isCastrated` INTEGER,
+                        `description` TEXT NOT NULL,
+                        `photoUrlsJson` TEXT NOT NULL,
+                        `latitude` REAL NOT NULL,
+                        `longitude` REAL NOT NULL,
+                        `address` TEXT,
+                        `contactPhone` TEXT,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        `pendingSync` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+                db.execSQL("""
+                    INSERT INTO `alerts_new`
+                    SELECT `id`,`ownerId`,`ownerName`,`petId`,`type`,`status`,`petName`,`petType`,
+                           `breed`,`color`,`size`,`hasCollar`,`isCastrated`,`description`,
+                           `photoUrlsJson`,`latitude`,`longitude`,`address`,`contactPhone`,
+                           `createdAt`,`updatedAt`,`pendingSync`
+                    FROM `alerts`
+                """.trimIndent())
+                db.execSQL("DROP TABLE `alerts`")
+                db.execSQL("ALTER TABLE `alerts_new` RENAME TO `alerts`")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_alerts_ownerId` ON `alerts` (`ownerId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_alerts_petId` ON `alerts` (`petId`)")
             }
         }
     }

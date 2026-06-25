@@ -29,13 +29,15 @@ class AlertRepository(
         launch {
             runCatching {
                 remoteDataSource.observeActiveAlerts().collect { alerts ->
-                    alerts.forEach { alertDao.insert(it.toEntity(pendingSync = false)) }
+                    alerts.forEach { alert ->
+                        runCatching { alertDao.insert(alert.toEntity(pendingSync = false)) }
+                    }
                 }
             }.onFailure {
-                // Sin red: fallback a one-shot fetch
                 runCatching {
-                    remoteDataSource.getActiveAlerts()
-                        .forEach { alertDao.insert(it.toEntity(pendingSync = false)) }
+                    remoteDataSource.getActiveAlerts().forEach { alert ->
+                        runCatching { alertDao.insert(alert.toEntity(pendingSync = false)) }
+                    }
                 }
             }
         }
@@ -103,10 +105,10 @@ class AlertRepository(
     }
 
     override suspend fun syncFromFirestore() {
-        try {
-            remoteDataSource.getActiveAlerts()
-                .forEach { alertDao.insert(it.toEntity(pendingSync = false)) }
-        } catch (_: Exception) {
+        runCatching {
+            remoteDataSource.getActiveAlerts().forEach { alert ->
+                runCatching { alertDao.insert(alert.toEntity(pendingSync = false)) }
+            }
         }
     }
 
