@@ -56,6 +56,7 @@ fun HomeScreen(
     onNavigateToExpressAlert: () -> Unit = {},
     onNavigateToMap: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
     viewModel: HomeViewModel
 ) {
     val uiState     by viewModel.uiState.collectAsStateWithLifecycle()
@@ -156,7 +157,8 @@ fun HomeScreen(
         Column(modifier = Modifier.fillMaxSize().padding(bottom = 72.dp)) {
             HomeHeader(
                 userName = currentUserName,
-                onFilterClick = { showFilterDialog = true }
+                onFilterClick = { showFilterDialog = true },
+                onNotificationsClick = onNavigateToNotifications
             )
             SearchSection(
                 query = filterState.query,
@@ -223,7 +225,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeader(userName: String?, onFilterClick: () -> Unit) {
+private fun HomeHeader(userName: String?, onFilterClick: () -> Unit, onNotificationsClick: () -> Unit = {}) {
     val greeting = userName
         ?.trim()
         ?.takeIf { it.isNotEmpty() }
@@ -247,9 +249,11 @@ private fun HomeHeader(userName: String?, onFilterClick: () -> Unit) {
         }
         Spacer(modifier = Modifier.width(4.dp))
         Box(modifier = Modifier.size(40.dp).clip(CircleShape)
-            .background(FooterColor), contentAlignment = Alignment.Center) {
+            .background(FooterColor)
+            .clickable(onClick = onNotificationsClick),
+            contentAlignment = Alignment.Center) {
             Icon(Icons.Default.Notifications, contentDescription = "Notificaciones",
-                tint = Color.Black, modifier = Modifier.size(20.dp))
+                tint = HuellitasTeal, modifier = Modifier.size(20.dp))
         }
     }
 }

@@ -3,6 +3,7 @@ package com.uade.huellitas.presentation.alert.detail
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FirebaseFirestore
 import com.uade.huellitas.HuellitasApplication
 import com.uade.huellitas.domain.model.Alert
 import com.uade.huellitas.domain.model.AlertStatus
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class AlertDetailViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -56,7 +58,8 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
                 if (alert != null) {
                     val isOwner = getCurrentUserIdUseCase() == alert.ownerId
                     _distanceLabel.value = resolveDistanceLabel(alert)
-                    _uiState.value = AlertDetailUiState.Success(alert, isOwner)
+                    val ownerName = fetchOwnerName(alert.ownerId, isOwner)
+                    _uiState.value = AlertDetailUiState.Success(alert, isOwner, ownerName)
                 } else {
                     _uiState.value = AlertDetailUiState.Error("Aviso no encontrado")
                 }
@@ -64,6 +67,16 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
                 _uiState.value = AlertDetailUiState.Error(e.message ?: "Error al cargar aviso")
             }
         }
+    }
+
+    private suspend fun fetchOwnerName(ownerId: String, isOwner: Boolean): String {
+        if (isOwner) return "Vos"
+        return runCatching {
+            val doc = FirebaseFirestore.getInstance()
+                .collection("users").document(ownerId).get().await()
+            val name = doc.getString("name")?.trim()?.takeIf { it.isNotBlank() }
+            name ?: doc.getString("email")?.substringBefore("@")?.ifBlank { null } ?: "Usuario"
+        }.getOrDefault("Usuario")
     }
 
     fun resolveAlert() {

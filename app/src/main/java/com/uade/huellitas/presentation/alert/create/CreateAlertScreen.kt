@@ -31,8 +31,13 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
@@ -69,6 +74,7 @@ import com.uade.huellitas.ui.theme.StatusFound
 import com.uade.huellitas.ui.theme.Urbanist
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateAlertScreen(
     onBack: () -> Unit,
@@ -86,6 +92,11 @@ fun CreateAlertScreen(
     var barrioError by remember { mutableStateOf<String?>(null) }
     var phoneError by remember { mutableStateOf<String?>(null) }
     var showAbandonDialog by remember { mutableStateOf(false) }
+    var barrioExpanded by remember { mutableStateOf(false) }
+    val barrioSuggestions = remember(formState.address) {
+        if (formState.address.isBlank()) emptyList()
+        else BARRIOS_CABA.filter { it.contains(formState.address.trim(), ignoreCase = true) }.take(5)
+    }
 
     val isFormDirty = formState.petName.isNotBlank()
         || formState.description.isNotBlank()
@@ -324,12 +335,59 @@ fun CreateAlertScreen(
                 }
 
                 SectionLabel("BARRIO *")
+                ExposedDropdownMenuBox(
+                    expanded = barrioExpanded && barrioSuggestions.isNotEmpty(),
+                    onExpandedChange = { barrioExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = formState.address,
+                        onValueChange = {
+                            viewModel.onAddressTyped(it)
+                            barrioError = null
+                            barrioExpanded = true
+                        },
+                        placeholder = { Text("Ej. Palermo, CABA", color = Color.Gray, fontFamily = Urbanist) },
+                        singleLine = true,
+                        isError = barrioError != null,
+                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryEditable),
+                        shape = RoundedCornerShape(3.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = HuellitasTeal,
+                            unfocusedBorderColor = Color(0xFFDDDDDD)
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = barrioExpanded && barrioSuggestions.isNotEmpty(),
+                        onDismissRequest = { barrioExpanded = false }
+                    ) {
+                        barrioSuggestions.forEach { barrio ->
+                            DropdownMenuItem(
+                                text = { Text(barrio, fontFamily = Urbanist) },
+                                onClick = {
+                                    val coords = BARRIOS_CABA_COORDS[barrio]
+                                    if (coords != null) {
+                                        viewModel.onLocationChange(coords.first, coords.second, barrio)
+                                    } else {
+                                        viewModel.onLocationChange(0.0, 0.0, barrio)
+                                    }
+                                    barrioExpanded = false
+                                    barrioError = null
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                            )
+                        }
+                    }
+                }
+                if (barrioError != null) {
+                    Text(barrioError!!, color = Color.Red, fontFamily = Urbanist, fontSize = 12.sp)
+                }
+
+                SectionLabel("CALLE (opcional)")
                 OutlinedTextField(
-                    value = formState.address,
-                    onValueChange = { viewModel.onLocationChange(0.0, 0.0, it); barrioError = null },
-                    placeholder = { Text("Ej. Palermo, CABA", color = Color.Gray, fontFamily = Urbanist) },
+                    value = formState.street,
+                    onValueChange = viewModel::onStreetChange,
+                    placeholder = { Text("Ej. Av. Santa Fe 3000", color = Color.Gray, fontFamily = Urbanist) },
                     singleLine = true,
-                    isError = barrioError != null,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(3.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -337,9 +395,6 @@ fun CreateAlertScreen(
                         unfocusedBorderColor = Color(0xFFDDDDDD)
                     )
                 )
-                if (barrioError != null) {
-                    Text(barrioError!!, color = Color.Red, fontFamily = Urbanist, fontSize = 12.sp)
-                }
 
                 SectionLabel("COLOR")
                 OutlinedTextField(
@@ -451,6 +506,73 @@ fun CreateAlertScreen(
         )
     }
 }
+
+private val BARRIOS_CABA_COORDS = mapOf(
+    "Agronomía, CABA" to (-34.607 to -58.489),
+    "Almagro, CABA" to (-34.614 to -58.428),
+    "Balvanera, CABA" to (-34.614 to -58.401),
+    "Barracas, CABA" to (-34.641 to -58.382),
+    "Belgrano, CABA" to (-34.563 to -58.458),
+    "Boedo, CABA" to (-34.630 to -58.420),
+    "Caballito, CABA" to (-34.620 to -58.443),
+    "Chacarita, CABA" to (-34.587 to -58.455),
+    "Coghlan, CABA" to (-34.556 to -58.470),
+    "Colegiales, CABA" to (-34.574 to -58.448),
+    "Constitución, CABA" to (-34.628 to -58.382),
+    "Flores, CABA" to (-34.630 to -58.468),
+    "Floresta, CABA" to (-34.630 to -58.490),
+    "La Boca, CABA" to (-34.636 to -58.363),
+    "La Paternal, CABA" to (-34.601 to -58.472),
+    "Liniers, CABA" to (-34.638 to -58.521),
+    "Mataderos, CABA" to (-34.654 to -58.516),
+    "Monte Castro, CABA" to (-34.624 to -58.503),
+    "Montserrat, CABA" to (-34.617 to -58.377),
+    "Nueva Pompeya, CABA" to (-34.651 to -58.411),
+    "Núñez, CABA" to (-34.546 to -58.462),
+    "Palermo, CABA" to (-34.585 to -58.433),
+    "Parque Avellaneda, CABA" to (-34.647 to -58.480),
+    "Parque Chacabuco, CABA" to (-34.637 to -58.440),
+    "Parque Chas, CABA" to (-34.573 to -58.477),
+    "Parque Patricios, CABA" to (-34.638 to -58.399),
+    "Puerto Madero, CABA" to (-34.609 to -58.361),
+    "Recoleta, CABA" to (-34.589 to -58.395),
+    "Retiro, CABA" to (-34.592 to -58.374),
+    "Saavedra, CABA" to (-34.552 to -58.485),
+    "San Cristóbal, CABA" to (-34.626 to -58.405),
+    "San Nicolás, CABA" to (-34.603 to -58.376),
+    "San Telmo, CABA" to (-34.622 to -58.370),
+    "Vélez Sársfield, CABA" to (-34.638 to -58.505),
+    "Versalles, CABA" to (-34.634 to -58.508),
+    "Villa Crespo, CABA" to (-34.599 to -58.449),
+    "Villa del Parque, CABA" to (-34.608 to -58.482),
+    "Villa Devoto, CABA" to (-34.605 to -58.502),
+    "Villa General Mitre, CABA" to (-34.617 to -58.475),
+    "Villa Lugano, CABA" to (-34.668 to -58.477),
+    "Villa Luro, CABA" to (-34.641 to -58.492),
+    "Villa Ortúzar, CABA" to (-34.575 to -58.469),
+    "Villa Pueyrredón, CABA" to (-34.586 to -58.499),
+    "Villa Real, CABA" to (-34.637 to -58.506),
+    "Villa Riachuelo, CABA" to (-34.669 to -58.460),
+    "Villa Santa Rita, CABA" to (-34.626 to -58.488),
+    "Villa Soldati, CABA" to (-34.660 to -58.445),
+    "Villa Urquiza, CABA" to (-34.573 to -58.485)
+)
+
+private val BARRIOS_CABA = listOf(
+    "Agronomía, CABA", "Almagro, CABA", "Balvanera, CABA", "Barracas, CABA",
+    "Belgrano, CABA", "Boedo, CABA", "Caballito, CABA", "Chacarita, CABA",
+    "Coghlan, CABA", "Colegiales, CABA", "Constitución, CABA", "Flores, CABA",
+    "Floresta, CABA", "La Boca, CABA", "La Paternal, CABA", "Liniers, CABA",
+    "Mataderos, CABA", "Monte Castro, CABA", "Montserrat, CABA", "Nueva Pompeya, CABA",
+    "Núñez, CABA", "Palermo, CABA", "Parque Avellaneda, CABA", "Parque Chacabuco, CABA",
+    "Parque Chas, CABA", "Parque Patricios, CABA", "Puerto Madero, CABA", "Recoleta, CABA",
+    "Retiro, CABA", "Saavedra, CABA", "San Cristóbal, CABA", "San Nicolás, CABA",
+    "San Telmo, CABA", "Vélez Sársfield, CABA", "Versalles, CABA", "Villa Crespo, CABA",
+    "Villa del Parque, CABA", "Villa Devoto, CABA", "Villa General Mitre, CABA",
+    "Villa Lugano, CABA", "Villa Luro, CABA", "Villa Ortúzar, CABA",
+    "Villa Pueyrredón, CABA", "Villa Real, CABA", "Villa Riachuelo, CABA",
+    "Villa Santa Rita, CABA", "Villa Soldati, CABA", "Villa Urquiza, CABA"
+)
 
 @Composable
 private fun SectionLabel(text: String) {

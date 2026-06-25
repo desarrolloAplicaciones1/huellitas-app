@@ -1,6 +1,7 @@
 ﻿package com.uade.huellitas.presentation.alert.express
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.uade.huellitas.HuellitasApplication
@@ -19,6 +20,7 @@ class ExpressAlertViewModel(application: Application) : AndroidViewModel(applica
     private val createAlertUseCase = appContainer.createAlertUseCase
     private val getCurrentUserIdUseCase = appContainer.getCurrentUserIdUseCase
     private val geocodeAddressUseCase = appContainer.geocodeAddressUseCase
+    private val uploadAlertPhotoUseCase = appContainer.uploadAlertPhotoUseCase
 
     private val _uiState = MutableStateFlow<ExpressAlertUiState>(ExpressAlertUiState.Idle)
     val uiState: StateFlow<ExpressAlertUiState> = _uiState.asStateFlow()
@@ -50,6 +52,18 @@ class ExpressAlertViewModel(application: Application) : AndroidViewModel(applica
         _formState.value = _formState.value.copy(address = value)
     }
 
+    fun onStreetChange(value: String) {
+        _formState.value = _formState.value.copy(street = value)
+    }
+
+    fun onPhotoSelected(uri: Uri) {
+        _formState.value = _formState.value.copy(selectedPhotoUri = uri)
+    }
+
+    fun clearPhoto() {
+        _formState.value = _formState.value.copy(selectedPhotoUri = null)
+    }
+
     fun publishAlert() {
         val ownerId = getCurrentUserIdUseCase() ?: run {
             _uiState.value = ExpressAlertUiState.Error("No hay sesion activa")
@@ -61,11 +75,18 @@ class ExpressAlertViewModel(application: Application) : AndroidViewModel(applica
             _uiState.value = ExpressAlertUiState.Loading
             try {
                 val now = System.currentTimeMillis()
-                val resolvedLocation = geocodeAddressUseCase(form.address)
-                    ?: Location(0.0, 0.0, form.address.ifBlank { null })
+                val displayAddress = listOf(form.street, form.address)
+                    .filter { it.isNotBlank() }.joinToString(", ").ifBlank { null }
+                val geocodeQuery = displayAddress ?: form.address
+                val resolvedLocation = geocodeAddressUseCase(geocodeQuery)
+                    ?: Location(0.0, 0.0, displayAddress ?: form.address.ifBlank { null })
 
                 val expressDescription = form.description.ifBlank {
                     "Reporte express en ${form.address}"
+                }
+
+                val uploadedPhotoUrl = form.selectedPhotoUri?.let { uri ->
+                    runCatching { uploadAlertPhotoUseCase(ownerId, uri.toString()) }.getOrNull()
                 }
 
                 createAlertUseCase(
@@ -78,7 +99,7 @@ class ExpressAlertViewModel(application: Application) : AndroidViewModel(applica
                         petType = form.petType,
                         size = form.size,
                         description = expressDescription,
-                        photoUrls = emptyList(),
+                        photoUrls = listOfNotNull(uploadedPhotoUrl),
                         location = resolvedLocation,
                         contactPhone = null,
                         createdAt = now,

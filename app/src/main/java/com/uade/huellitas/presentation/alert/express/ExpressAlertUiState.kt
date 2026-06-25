@@ -1,5 +1,6 @@
 ﻿package com.uade.huellitas.presentation.alert.express
 
+import android.net.Uri
 import com.uade.huellitas.domain.model.AlertType
 import com.uade.huellitas.domain.model.PetType
 
@@ -16,5 +17,7 @@ data class ExpressAlertFormState(
     val petType: PetType = PetType.DOG,
     val size: String = "Chico",
     val description: String = "",
-    val address: String = ""
+    val address: String = "",
+    val street: String = "",
+    val selectedPhotoUri: Uri? = null
 )

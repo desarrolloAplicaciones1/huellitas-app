@@ -66,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.Circle
@@ -75,6 +76,7 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.uade.huellitas.R
 import com.uade.huellitas.domain.model.PetType
 import com.uade.huellitas.domain.model.ReferenceLocationSource
 import android.Manifest
@@ -365,6 +367,10 @@ private fun GoogleMapView(
         )
 
         state.alerts.filter { it.hasPreciseLocation }.forEach { alert ->
+            val pinIcon = remember(alert.petType) {
+                val resId = if (alert.petType == PetType.DOG) R.drawable.pin_dog else R.drawable.pin_cat
+                BitmapDescriptorFactory.fromResource(resId)
+            }
             Marker(
                 state = MarkerState(
                     position = LatLng(
@@ -372,6 +378,7 @@ private fun GoogleMapView(
                         alert.source.location.longitude
                     )
                 ),
+                icon = pinIcon,
                 title = alert.name,
                 snippet = "${alert.typeLabel} · ${alert.distanceLabel}",
                 onClick = {

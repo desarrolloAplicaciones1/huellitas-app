@@ -18,5 +18,5 @@ data class HomeFilterState(
     val query: String = "",
     val petType: PetType? = null,
     val alertType: AlertType? = null,
-    val radiusKm: Int = 10
+    val radiusKm: Int = 15
 )

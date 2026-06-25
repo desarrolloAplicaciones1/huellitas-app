@@ -82,6 +82,7 @@ fun AlertDetailScreen(
                 AlertDetailContent(
                     alert = state.alert,
                     isOwner = state.isOwner,
+                    ownerName = state.ownerName,
                     isOnline = isOnline,
                     distanceLabel = distanceLabel,
                     onBack = onBack,
@@ -109,6 +110,7 @@ fun AlertDetailScreen(
 private fun AlertDetailContent(
     alert: Alert,
     isOwner: Boolean,
+    ownerName: String? = null,
     isOnline: Boolean,
     distanceLabel: String?,
     onBack: () -> Unit,
@@ -423,6 +425,19 @@ private fun AlertDetailContent(
                         fontFamily = Urbanist, fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+                if (ownerName != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Person, contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Publicado por $ownerName",
+                            fontFamily = Urbanist, fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
@@ -764,8 +779,8 @@ private fun AlertDetailContent(
 
             // Botones normales ocultos en modo edicion
             if (!isEditing) {
-                // Contactar por WhatsApp
-                Button(
+                // Contactar por WhatsApp — solo si no sos el dueño
+                if (!isOwner) Button(
                     onClick = {
                         val phone = alert.contactPhone?.replace(Regex("[^0-9]"), "").orEmpty()
                         val msg = "Hola! Vi tu aviso en Huellitas sobre ${alert.petName}. Quiero mas info."
