@@ -28,9 +28,16 @@ class AlertRepository(
         // sincroniza Room y el UI se actualiza automáticamente.
         launch {
             runCatching {
-                remoteDataSource.observeActiveAlerts().collect { alerts ->
-                    alerts.forEach { alert ->
+                remoteDataSource.observeActiveAlerts().collect { remoteAlerts ->
+                    val remoteIds = remoteAlerts.map { it.id }.toSet()
+                    remoteAlerts.forEach { alert ->
                         runCatching { alertDao.insert(alert.toEntity(pendingSync = false)) }
+                    }
+                    // Prune local alerts that no longer exist in Firestore
+                    runCatching {
+                        alertDao.getActiveAlertsSnapshot()
+                            .filter { it.id !in remoteIds }
+                            .forEach { runCatching { alertDao.deleteById(it.id) } }
                     }
                 }
             }.onFailure {
