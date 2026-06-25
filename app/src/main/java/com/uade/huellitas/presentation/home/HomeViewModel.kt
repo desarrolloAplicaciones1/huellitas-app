@@ -11,6 +11,7 @@ import com.uade.huellitas.domain.usecase.alert.GetActiveAlertsUseCase
 import com.uade.huellitas.domain.usecase.alert.PushPendingAlertsUseCase
 import com.uade.huellitas.domain.usecase.location.ResolveReferenceLocationUseCase
 import com.uade.huellitas.domain.usecase.user.GetCurrentUserUseCase
+import com.uade.huellitas.domain.usecase.user.SyncCurrentUserProfileUseCase
 import java.text.Normalizer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +34,8 @@ class HomeViewModel(
     private val resolveReferenceLocationUseCase: ResolveReferenceLocationUseCase,
     private val filterAlertsByRadiusUseCase: FilterAlertsByRadiusUseCase,
     private val networkMonitor: NetworkMonitor,
-    private val pushPendingAlertsUseCase: PushPendingAlertsUseCase? = null
+    private val pushPendingAlertsUseCase: PushPendingAlertsUseCase? = null,
+    private val syncCurrentUserProfileUseCase: SyncCurrentUserProfileUseCase? = null
 ) : ViewModel() {
 
     private val _filterState = MutableStateFlow(HomeFilterState())
@@ -41,6 +43,7 @@ class HomeViewModel(
     val filterState: StateFlow<HomeFilterState> = _filterState.asStateFlow()
 
     init {
+        viewModelScope.launch { runCatching { syncCurrentUserProfileUseCase?.invoke() } }
         viewModelScope.launch {
             networkMonitor.isOnline
                 .distinctUntilChanged()

@@ -58,7 +58,9 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
                 if (alert != null) {
                     val isOwner = getCurrentUserIdUseCase() == alert.ownerId
                     _distanceLabel.value = resolveDistanceLabel(alert)
-                    val ownerName = fetchOwnerName(alert.ownerId, isOwner)
+                    val ownerName = if (isOwner) "Vos"
+                        else alert.ownerName?.trim()?.ifBlank { null }
+                            ?: fetchOwnerName(alert.ownerId)
                     _uiState.value = AlertDetailUiState.Success(alert, isOwner, ownerName)
                 } else {
                     _uiState.value = AlertDetailUiState.Error("Aviso no encontrado")
@@ -69,14 +71,15 @@ class AlertDetailViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    private suspend fun fetchOwnerName(ownerId: String, isOwner: Boolean): String {
-        if (isOwner) return "Vos"
+    private suspend fun fetchOwnerName(ownerId: String): String {
         return runCatching {
             val doc = FirebaseFirestore.getInstance()
                 .collection("users").document(ownerId).get().await()
+            if (!doc.exists()) return@runCatching "Otro usuario"
             val name = doc.getString("name")?.trim()?.takeIf { it.isNotBlank() }
-            name ?: doc.getString("email")?.substringBefore("@")?.ifBlank { null } ?: "Usuario"
-        }.getOrDefault("Usuario")
+            val emailPrefix = doc.getString("email")?.substringBefore("@")?.trim()?.takeIf { it.isNotBlank() }
+            name ?: emailPrefix ?: "Otro usuario"
+        }.getOrDefault("Otro usuario")
     }
 
     fun resolveAlert() {

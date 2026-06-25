@@ -11,9 +11,11 @@ import com.uade.huellitas.domain.model.AlertStatus
 import com.uade.huellitas.domain.repository.PhotoStorageRepository as PhotoStorageRepositoryContract
 import com.uade.huellitas.domain.repository.AlertRepository as AlertRepositoryContract
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 class AlertRepository(
     private val alertDao: AlertDao,
@@ -21,16 +23,26 @@ class AlertRepository(
     private val photoStorageRepository: PhotoStorageRepositoryContract
 ) : AlertRepositoryContract {
 
-    override fun getActiveAlerts(): Flow<List<Alert>> = flow {
-        // 1. Fetch desde Firestore y sincroniza Room
-        try {
-            remoteDataSource.getActiveAlerts()
-                .forEach { alertDao.insert(it.toEntity(pendingSync = false)) }
-        } catch (_: Exception) {
-            // Sin red; usa el cache de Room
+    override fun getActiveAlerts(): Flow<List<Alert>> = channelFlow {
+        // Listener en tiempo real: cada vez que Firestore cambia (nuevo aviso de cualquier usuario),
+        // sincroniza Room y el UI se actualiza automáticamente.
+        launch {
+            runCatching {
+                remoteDataSource.observeActiveAlerts().collect { alerts ->
+                    alerts.forEach { alertDao.insert(it.toEntity(pendingSync = false)) }
+                }
+            }.onFailure {
+                // Sin red: fallback a one-shot fetch
+                runCatching {
+                    remoteDataSource.getActiveAlerts()
+                        .forEach { alertDao.insert(it.toEntity(pendingSync = false)) }
+                }
+            }
         }
-        // 2. Emite desde Room (ya tiene los datos de Firestore o el cache offline)
-        emitAll(alertDao.getActiveAlerts().map { list -> list.map { it.toDomain() } })
+        // Room emite reactivamente cada vez que cambia (por el listener de arriba)
+        alertDao.getActiveAlerts()
+            .map { list -> list.map { it.toDomain() } }
+            .collect { send(it) }
     }
 
     override fun getMyAlerts(uid: String): Flow<List<Alert>> =

@@ -66,6 +66,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.google.android.gms.maps.CameraUpdateFactory
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -78,6 +80,7 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.uade.huellitas.R
 import com.uade.huellitas.domain.model.PetType
+import androidx.compose.ui.platform.LocalContext
 import com.uade.huellitas.domain.model.ReferenceLocationSource
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -331,6 +334,7 @@ private fun GoogleMapView(
     state: MapUiState.Success,
     onAlertTap: (MapAlert) -> Unit
 ) {
+    val context = LocalContext.current
     val center = remember(state.center) {
         if (state.center.latitude != 0.0 || state.center.longitude != 0.0) {
             LatLng(state.center.latitude, state.center.longitude)
@@ -368,8 +372,19 @@ private fun GoogleMapView(
 
         state.alerts.filter { it.hasPreciseLocation }.forEach { alert ->
             val pinIcon = remember(alert.petType) {
-                val resId = if (alert.petType == PetType.DOG) R.drawable.pin_dog else R.drawable.pin_cat
-                BitmapDescriptorFactory.fromResource(resId)
+                runCatching {
+                    val resId = if (alert.petType == PetType.DOG) R.drawable.pin_dog else R.drawable.pin_cat
+                    val original = BitmapFactory.decodeResource(context.resources, resId)
+                    val sizePx = (48 * context.resources.displayMetrics.density).toInt()
+                    val scaled = Bitmap.createScaledBitmap(original, sizePx, sizePx, true)
+                    original.recycle()
+                    BitmapDescriptorFactory.fromBitmap(scaled)
+                }.getOrElse {
+                    BitmapDescriptorFactory.defaultMarker(
+                        if (alert.petType == PetType.DOG) BitmapDescriptorFactory.HUE_BLUE
+                        else BitmapDescriptorFactory.HUE_CYAN
+                    )
+                }
             }
             Marker(
                 state = MarkerState(
