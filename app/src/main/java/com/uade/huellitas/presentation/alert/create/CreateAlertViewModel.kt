@@ -98,13 +98,13 @@ class CreateAlertViewModel(
             try {
                 val now = System.currentTimeMillis()
 
-                val userLocationHint = try {
-                    getCurrentUserUseCase().first()?.location
+                val currentUser = try {
+                    getCurrentUserUseCase().first()
                 } catch (_: Exception) {
                     null
                 }
 
-                val resolvedLocation = resolveLocation(form, userLocationHint)
+                val resolvedLocation = resolveLocation(form, currentUser?.location)
 
                 val uploadedPhotoUrl = form.selectedPhotoUri?.let { uri ->
                     _uiState.value = CreateAlertUiState.UploadingPhoto
@@ -121,6 +121,7 @@ class CreateAlertViewModel(
                 val alert = Alert(
                     id = UUID.randomUUID().toString(),
                     ownerId = ownerId,
+                    ownerName = currentUser?.name?.trim()?.ifBlank { null },
                     type = form.alertType,
                     status = AlertStatus.ACTIVE,
                     petName = form.petName.trim(),

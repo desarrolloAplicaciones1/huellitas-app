@@ -6,6 +6,7 @@ import androidx.compose.runtime.Immutable
 data class Alert(
     val id: String,
     val ownerId: String,
+    val ownerName: String? = null,
     val petId: String? = null,
     val type: AlertType,
     val status: AlertStatus,

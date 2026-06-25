@@ -11,6 +11,7 @@ import com.uade.huellitas.domain.model.Location
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -19,6 +20,7 @@ class ExpressAlertViewModel(application: Application) : AndroidViewModel(applica
     private val appContainer = (application as HuellitasApplication).appContainer
     private val createAlertUseCase = appContainer.createAlertUseCase
     private val getCurrentUserIdUseCase = appContainer.getCurrentUserIdUseCase
+    private val getCurrentUserUseCase = appContainer.getCurrentUserUseCase
     private val geocodeAddressUseCase = appContainer.geocodeAddressUseCase
     private val uploadAlertPhotoUseCase = appContainer.uploadAlertPhotoUseCase
 
@@ -74,6 +76,7 @@ class ExpressAlertViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             _uiState.value = ExpressAlertUiState.Loading
             try {
+                val ownerName = runCatching { getCurrentUserUseCase().first()?.name?.trim()?.ifBlank { null } }.getOrNull()
                 val now = System.currentTimeMillis()
                 val displayAddress = listOf(form.street, form.address)
                     .filter { it.isNotBlank() }.joinToString(", ").ifBlank { null }
@@ -93,6 +96,7 @@ class ExpressAlertViewModel(application: Application) : AndroidViewModel(applica
                     Alert(
                         id = UUID.randomUUID().toString(),
                         ownerId = ownerId,
+                        ownerName = ownerName,
                         type = form.alertType,
                         status = AlertStatus.ACTIVE,
                         petName = form.petName.ifBlank { "Sin nombre" },

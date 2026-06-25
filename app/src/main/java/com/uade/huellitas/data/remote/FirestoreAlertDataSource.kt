@@ -80,6 +80,7 @@ class FirestoreAlertDataSource {
         Alert(
             id = id,
             ownerId = getString("ownerId")!!,
+            ownerName = getString("ownerName"),
             petId = getString("petId"),
             type = AlertType.valueOf(getString("type")!!),
             status = getAlertStatus(),
@@ -120,6 +121,7 @@ class FirestoreAlertDataSource {
 
     private fun Alert.toMap(): Map<String, Any?> = mapOf(
         "ownerId" to ownerId,
+        "ownerName" to ownerName,
         "petId" to petId,
         "type" to type.name,
         FIELD_STATUS to status.name,

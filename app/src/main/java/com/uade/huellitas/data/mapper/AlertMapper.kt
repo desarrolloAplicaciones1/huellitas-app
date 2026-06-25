@@ -10,6 +10,7 @@ import com.uade.huellitas.domain.model.PetType
 fun AlertEntity.toDomain(): Alert = Alert(
     id = id,
     ownerId = ownerId,
+    ownerName = ownerName,
     petId = petId,
     type = AlertType.valueOf(type),
     status = AlertStatus.valueOf(status),
@@ -31,6 +32,7 @@ fun AlertEntity.toDomain(): Alert = Alert(
 fun Alert.toEntity(pendingSync: Boolean = false): AlertEntity = AlertEntity(
     id = id,
     ownerId = ownerId,
+    ownerName = ownerName,
     petId = petId,
     type = type.name,
     status = status.name,

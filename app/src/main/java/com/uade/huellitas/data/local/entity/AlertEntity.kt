@@ -24,6 +24,7 @@ import androidx.room.PrimaryKey
 data class AlertEntity(
     @PrimaryKey val id: String,
     @ColumnInfo(index = true) val ownerId: String,
+    val ownerName: String? = null,
     @ColumnInfo(index = true) val petId: String?,
     val type: String,
     val status: String,

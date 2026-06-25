@@ -17,7 +17,7 @@ import com.uade.huellitas.data.local.entity.UserEntity
 
 @Database(
     entities = [UserEntity::class, PetEntity::class, AlertEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -36,7 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "patitas_db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { INSTANCE = it }
             }
@@ -47,6 +47,12 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE alerts ADD COLUMN size TEXT")
                 db.execSQL("ALTER TABLE alerts ADD COLUMN hasCollar INTEGER")
                 db.execSQL("ALTER TABLE alerts ADD COLUMN isCastrated INTEGER")
+            }
+        }
+
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE alerts ADD COLUMN ownerName TEXT")
             }
         }
     }

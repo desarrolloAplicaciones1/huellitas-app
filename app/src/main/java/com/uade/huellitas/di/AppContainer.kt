@@ -161,7 +161,8 @@ class AppContainer(context: Context) {
         resolveReferenceLocationUseCase,
         filterAlertsByRadiusUseCase,
         networkMonitor,
-        pushPendingAlertsUseCase
+        pushPendingAlertsUseCase,
+        syncCurrentUserProfileUseCase
     )
     val createAlertViewModel = CreateAlertViewModel(
         createAlertUseCase,
