@@ -1,28 +1,12 @@
 # Huellitas
 
+<img width="510" height="185" alt="image" src="https://github.com/user-attachments/assets/4b35d2a0-664c-4d38-8361-d331f9468339" />
+
+
 App Android comunitaria para reportar mascotas perdidas o encontradas. Los usuarios pueden publicar avisos, consultar alertas activas, ver sus propios reportes, explorar un mapa interactivo y contactar directamente al duenio de una mascota.
 
 **TP Integrador - Desarrollo de Aplicaciones I - UADE - 2026**  
 Prof. Narducci Adrian Alberto
-
----
-
-## Estado de cierre
-
-### Cerrado en codigo
-
-- `assembleDebug` y `testDebugUnitTest` pasan.
-- Se completo el flujo de perfil con acceso a `Mis avisos`, `Mis mascotas` y alta de mascota.
-- Se implemento `CreatePetScreen` y quedo conectada la ruta `CreatePet`.
-- Se unifico la ubicacion de referencia del mapa para filtrar, centrar camara y calcular distancia.
-- El detalle del aviso ya no usa una distancia hardcodeada: muestra distancia real o fallback por direccion.
-- Se removieron elementos de UI y rutas que prometian comportamiento no implementado (`Modo offline` manual y `EditAlert` vacio).
-
-### Lo que resta para dar la app por cerrada
-
-1. Mergear la pila de PRs pendientes sobre `main`.
-2. Hacer QA manual en dispositivo real con Firebase, Maps, permisos de ubicacion y reconexion.
-3. Como mejora de calidad, sumar tests instrumentados/UI; hoy la validacion automatica es unitaria.
 
 ---
 
@@ -47,6 +31,9 @@ Prof. Narducci Adrian Alberto
 | Analytics | Firebase Analytics |
 
 ---
+
+<img width="746" height="390" alt="image" src="https://github.com/user-attachments/assets/10493a29-0464-4459-aae1-02ba98f60465" />
+
 
 ## Arquitectura - Clean Architecture + MVVM
 
@@ -86,6 +73,9 @@ DAO / DataSource / Android service
 - `AppContainer` centraliza el armado de dependencias sin Hilt.
 
 ---
+
+<img width="750" height="420" alt="image" src="https://github.com/user-attachments/assets/30d79b11-3ad3-4179-a230-6d505a27de05" />
+
 
 ## Estructura de packages
 
