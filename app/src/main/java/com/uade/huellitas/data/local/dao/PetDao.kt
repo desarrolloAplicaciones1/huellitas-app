@@ -20,4 +20,10 @@ interface PetDao {
 
     @Delete
     suspend fun delete(pet: PetEntity)
+
+    @Query("SELECT * FROM pets WHERE ownerId = :ownerId")
+    suspend fun getPetsByOwnerSnapshot(ownerId: String): List<PetEntity>
+
+    @Query("DELETE FROM pets WHERE id = :id")
+    suspend fun deleteById(id: String)
 }
