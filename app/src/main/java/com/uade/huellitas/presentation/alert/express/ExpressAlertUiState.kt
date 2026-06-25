@@ -18,5 +18,6 @@ data class ExpressAlertFormState(
     val size: String = "Chico",
     val description: String = "",
     val address: String = "",
+    val street: String = "",
     val selectedPhotoUri: Uri? = null
 )

@@ -331,6 +331,20 @@ fun ExpressAlertScreen(
                 Text(barrioError!!, color = Color.Red, fontFamily = Urbanist, fontSize = 12.sp)
             }
 
+            ExpressLabel("CALLE (opcional)")
+            OutlinedTextField(
+                value = formState.street,
+                onValueChange = viewModel::onStreetChange,
+                placeholder = { Text("Ej: Av. Santa Fe 3000", color = Color.Gray, fontFamily = Urbanist) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(3.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = HuellitasTeal,
+                    unfocusedBorderColor = Color(0xFFDDDDDD)
+                )
+            )
+
             Spacer(modifier = Modifier.height(8.dp))
         }
 

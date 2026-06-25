@@ -52,6 +52,10 @@ class ExpressAlertViewModel(application: Application) : AndroidViewModel(applica
         _formState.value = _formState.value.copy(address = value)
     }
 
+    fun onStreetChange(value: String) {
+        _formState.value = _formState.value.copy(street = value)
+    }
+
     fun onPhotoSelected(uri: Uri) {
         _formState.value = _formState.value.copy(selectedPhotoUri = uri)
     }
@@ -71,8 +75,11 @@ class ExpressAlertViewModel(application: Application) : AndroidViewModel(applica
             _uiState.value = ExpressAlertUiState.Loading
             try {
                 val now = System.currentTimeMillis()
-                val resolvedLocation = geocodeAddressUseCase(form.address)
-                    ?: Location(0.0, 0.0, form.address.ifBlank { null })
+                val displayAddress = listOf(form.street, form.address)
+                    .filter { it.isNotBlank() }.joinToString(", ").ifBlank { null }
+                val geocodeQuery = displayAddress ?: form.address
+                val resolvedLocation = geocodeAddressUseCase(geocodeQuery)
+                    ?: Location(0.0, 0.0, displayAddress ?: form.address.ifBlank { null })
 
                 val expressDescription = form.description.ifBlank {
                     "Reporte express en ${form.address}"

@@ -779,8 +779,8 @@ private fun AlertDetailContent(
 
             // Botones normales ocultos en modo edicion
             if (!isEditing) {
-                // Contactar por WhatsApp
-                Button(
+                // Contactar por WhatsApp — solo si no sos el dueño
+                if (!isOwner) Button(
                     onClick = {
                         val phone = alert.contactPhone?.replace(Regex("[^0-9]"), "").orEmpty()
                         val msg = "Hola! Vi tu aviso en Huellitas sobre ${alert.petName}. Quiero mas info."
