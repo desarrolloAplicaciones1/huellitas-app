@@ -1,10 +1,12 @@
 ﻿package com.uade.huellitas.presentation.auth
 
+import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -15,9 +17,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import com.uade.huellitas.R
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -42,6 +46,13 @@ fun LoginScreen(
     var passwordError by remember { mutableStateOf<String?>(null) }
 
     val snackbarHostState = remember { SnackbarHostState() }
+
+    val view = LocalView.current
+    SideEffect {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            view.isAutoHandwritingEnabled = false
+        }
+    }
 
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
@@ -93,6 +104,7 @@ fun LoginScreen(
                 trailingIcon = {
                     Icon(Icons.Default.Email, contentDescription = null, tint = Color.Gray)
                 },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 isError = emailError != null,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
