@@ -18,6 +18,6 @@ class HuellitasFirebaseMessagingService : FirebaseMessagingService() {
         FirebaseFirestore.getInstance()
             .collection("users")
             .document(userId)
-            .update("fcmToken", token)
+            .set(mapOf("fcmToken" to token), com.google.firebase.firestore.SetOptions.merge())
     }
 }
