@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.uade.huellitas.ui.theme.HuellitasTeal
+import com.uade.huellitas.ui.theme.ThemeState
 import com.uade.huellitas.ui.theme.Urbanist
 
 @Composable
@@ -82,7 +83,10 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(72.dp))
 
             Image(
-                painter = painterResource(id = com.uade.huellitas.R.drawable.logo_login),
+                painter = painterResource(
+                    id = if (ThemeState.isDarkMode) R.drawable.logo_dark
+                         else R.drawable.logo_login
+                ),
                 contentDescription = "Huellitas",
                 modifier = Modifier.width(280.dp)
             )
@@ -113,7 +117,9 @@ fun LoginScreen(
                 shape = RoundedCornerShape(3.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = HuellitasTeal,
-                    unfocusedBorderColor = Color(0xFFDDDDDD)
+                    unfocusedBorderColor = Color(0xFFDDDDDD),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 )
             )
             if (emailError != null) {
@@ -158,7 +164,9 @@ fun LoginScreen(
                 shape = RoundedCornerShape(3.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = HuellitasTeal,
-                    unfocusedBorderColor = Color(0xFFDDDDDD)
+                    unfocusedBorderColor = Color(0xFFDDDDDD),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 )
             )
             if (passwordError != null) {
